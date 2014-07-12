@@ -2588,3 +2588,8 @@ config PROJECT_P865F05
 #//[ECID:0000]ZTE_BSP maxiaoping 20130124 modify for P865F05 basic driver,end.	
 
 endif
+config ZTE_VIBRATOR_INTENSITY_SYSFS
+	bool "ZTE vibrator intensity sysfs"
+	default n
+	help
+	  Select Y to enable a sysfs for controlling the vibrator intensity (voltage).
