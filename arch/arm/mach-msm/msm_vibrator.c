@@ -42,7 +42,9 @@
 #define VIB_OFF_DELAY  50 //ms
 
 #define PMIC_VIBRATOR_LEVEL	(3000)
-
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+static int volt_value = 3000;
+#endif
 #if DEBUG
 #define debug_print(x...) do {pr_info(x); } while (0)
 #else
@@ -87,7 +89,7 @@ static void set_pmic_vibrator(int on)
     }
 
     if (on)
-        req.data = cpu_to_be32(get_vibrator_voltage());
+        req.data = cpu_to_be32(volt_value);
     else
         req.data = cpu_to_be32(0);
 
@@ -212,6 +214,27 @@ static int vibrator_get_time(struct timed_output_dev *dev)
         return 0;
 }
 
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+static ssize_t intensity_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", volt_value);
+}
+
+static ssize_t intensity_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	int value;
+
+	if (sscanf(buf, "%d", &value) != 1)
+		return -EINVAL;
+
+	volt_value = value;
+
+	return size;
+}
+
+static DEVICE_ATTR(intensity, 0666, intensity_show, intensity_store);
+#endif
+
 static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
 {
     int value=0;
@@ -237,6 +260,9 @@ static struct timed_output_dev pmic_vibrator =
 
 void __init msm_init_pmic_vibrator(void)
 {
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+	int err;
+#endif
 
     pr_info("msm_init_pmic_vibrator\n");
     INIT_WORK(&work_vibrator_on, pmic_vibrator_on);
@@ -246,10 +272,19 @@ void __init msm_init_pmic_vibrator(void)
     vibe_timer.function = vibrator_timer_func;
 
     timed_output_dev_register(&pmic_vibrator);
-}
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+	volt_value = get_vibrator_voltage();
 
+	err = device_create_file(pmic_vibrator.dev, &dev_attr_intensity);
+	if (err < 0)
+	{
+		pr_err("%s: failed to create sysfs\n", __func__);
+	}
+#endif
+}
 MODULE_DESCRIPTION("timed output pmic vibrator device");
 MODULE_LICENSE("GPL");
+
 
 #else//disable qcom default code.
 #define PM_LIBPROG      0x30000061
