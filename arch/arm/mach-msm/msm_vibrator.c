@@ -31,7 +31,7 @@
 #include <linux/module.h>
 #include "pmic.h"
 #include "timed_output.h"
-
+#include "msm_vibrator.h"
 #include <mach/msm_rpcrouter.h>
 
 #ifdef CONFIG_MSM_RPC_VIBRATOR
@@ -42,7 +42,9 @@
 #define VIB_OFF_DELAY  50 //ms
 
 #define PMIC_VIBRATOR_LEVEL	(3000)
-
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+static int volt_value = 3000;
+#endif
 #if DEBUG
 #define debug_print(x...) do {pr_info(x); } while (0)
 #else
@@ -59,7 +61,12 @@ struct timespec volatile g_ts_start;
 struct timespec volatile g_ts_end;
 #endif
 static int vibrator_on_delay;			
+uint get_vibrator_voltage(void)
+{
+    
+        return 3000;
 
+}
 static void set_pmic_vibrator(int on)
 {
     static struct msm_rpc_endpoint *vib_endpoint;
@@ -82,7 +89,7 @@ static void set_pmic_vibrator(int on)
     }
 
     if (on)
-        req.data = cpu_to_be32(PMIC_VIBRATOR_LEVEL);
+        req.data = cpu_to_be32(volt_value);
     else
         req.data = cpu_to_be32(0);
 
@@ -207,6 +214,27 @@ static int vibrator_get_time(struct timed_output_dev *dev)
         return 0;
 }
 
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+static ssize_t intensity_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", volt_value);
+}
+
+static ssize_t intensity_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	int value;
+
+	if (sscanf(buf, "%d", &value) != 1)
+		return -EINVAL;
+
+	volt_value = value;
+
+	return size;
+}
+
+static DEVICE_ATTR(intensity, 0666, intensity_show, intensity_store);
+#endif
+
 static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
 {
     int value=0;
@@ -232,6 +260,9 @@ static struct timed_output_dev pmic_vibrator =
 
 void __init msm_init_pmic_vibrator(void)
 {
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+	int err;
+#endif
 
     pr_info("msm_init_pmic_vibrator\n");
     INIT_WORK(&work_vibrator_on, pmic_vibrator_on);
@@ -241,10 +272,19 @@ void __init msm_init_pmic_vibrator(void)
     vibe_timer.function = vibrator_timer_func;
 
     timed_output_dev_register(&pmic_vibrator);
-}
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+	volt_value = get_vibrator_voltage();
 
+	err = device_create_file(pmic_vibrator.dev, &dev_attr_intensity);
+	if (err < 0)
+	{
+		pr_err("%s: failed to create sysfs\n", __func__);
+	}
+#endif
+}
 MODULE_DESCRIPTION("timed output pmic vibrator device");
 MODULE_LICENSE("GPL");
+
 
 #else//disable qcom default code.
 #define PM_LIBPROG      0x30000061
@@ -253,7 +293,9 @@ MODULE_LICENSE("GPL");
 #else
 #define PM_LIBVERS      0x10001
 #endif
-
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+static int volt_value = 3000;
+#endif
 #define HTC_PROCEDURE_SET_VIB_ON_OFF	21
 #define PMIC_VIBRATOR_LEVEL	(3000)
 
@@ -273,7 +315,7 @@ static void set_pmic_vibrator(int on)
 	}
 
 	if (on)
-		rc = pmic_vib_mot_set_volt(PMIC_VIBRATOR_LEVEL);
+		rc = pmic_vib_mot_set_volt(get_vibrator_voltage());
 	else
 		rc = pmic_vib_mot_set_volt(0);
 
@@ -303,7 +345,7 @@ static void set_pmic_vibrator(int on)
 
 
 	if (on)
-		req.data = cpu_to_be32(PMIC_VIBRATOR_LEVEL);
+		req.data = cpu_to_be32(volt_value);
 	else
 		req.data = cpu_to_be32(0);
 
@@ -348,6 +390,27 @@ static int vibrator_get_time(struct timed_output_dev *dev)
 	return 0;
 }
 
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+static ssize_t intensity_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", volt_value);
+}
+
+static ssize_t intensity_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	int value;
+
+	if (sscanf(buf, "%d", &value) != 1)
+		return -EINVAL;
+
+	volt_value = value;
+
+	return size;
+}
+
+static DEVICE_ATTR(intensity, 0666, intensity_show, intensity_store);
+#endif
+
 static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
 {
 	pr_debug("%s\n", __func__);
@@ -363,13 +426,25 @@ static struct timed_output_dev pmic_vibrator = {
 
 void __init msm_init_pmic_vibrator(void)
 {
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+	int err;
+#endif
 	INIT_WORK(&vibrator_work, update_vibrator);
 	hrtimer_init(&vibrator_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	vibrator_timer.function = vibrator_timer_func;
 
 	timed_output_dev_register(&pmic_vibrator);
-}
 
+#ifdef CONFIG_ZTE_VIBRATOR_INTENSITY_SYSFS
+	volt_value = get_vibrator_voltage();
+
+	err = device_create_file(pmic_vibrator.dev, &dev_attr_intensity);
+	if (err < 0)
+	{
+		pr_err("%s: failed to create sysfs\n", __func__);
+	}
+#endif
+}
 MODULE_DESCRIPTION("timed output pmic vibrator device");
 MODULE_LICENSE("GPL");
 #endif
