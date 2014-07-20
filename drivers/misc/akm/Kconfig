@@ -1,0 +1,35 @@
+
+#[ECID:000000] ZTEBSP wanghaifei 20120405 start, for compile
+menu "AKM Sensors Support"
+
+choice
+    prompt "Compass Type"
+    depends on I2C
+    optional
+
+config AKM_SENSORS_AK8962
+    bool "AKM ak8962"
+    help
+      This enables support for the AKM ak8962 compass
+
+endchoice
+
+choice
+    prompt "Accelerometer Type"
+    depends on I2C && AKM_SENSORS_AK8962
+    optional
+
+config AKM_SENSORS_KXTF9
+    bool "Kionix KXTF9"
+    select INPUT_POLLDEV
+    help
+      This enables support for the Kionix KXFT9 accelerometer
+
+config AKM_SENSORS_MMA845X
+    bool "Freescale mma8451/8452/8453"
+    help
+      This enables support for the Freescale mma8451/8452/8453 accelerometer
+endchoice
+
+endmenu
+#[ECID:000000] ZTEBSP wanghaifei 20120405 end, for compile

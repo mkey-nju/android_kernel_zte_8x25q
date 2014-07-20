@@ -323,6 +323,20 @@ static struct clk_lookup msm_cmn_clk_7625a_7627a[] __initdata = {
 	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-006c"),
 	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-000d"),
 	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-0042"),
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-0064"),
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-0062"),
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-0032"),
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-007a"),
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-003c"),	////ECID:0000 zhangzhao 2012-4-23 modified for 5640
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-002d"),	////ECID:0000 zhangzhao 2012-4-23 modified for  s5k5ca
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-001e"),	//ECID:0000 zhangzhao 2012-4-23 modified for camera tosiba
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-0030"),     
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-003d"),     
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-0020"),     
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"0-0036"),     
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"1-007a"),	//ECID:0000 zhangzhao 2012-12-1 modified for camera mt9d115 for v72a
+	CLK_LOOKUP("cam_clk",		cam_m_clk.c,	"1-003d"),     
+
 	CLK_LOOKUP("csi_clk",		csi0_clk.c,	"msm_camera_ov9726.0"),
 	CLK_LOOKUP("csi_pclk",		csi0_p_clk.c,	"msm_camera_ov9726.0"),
 	CLK_LOOKUP("csi_vfe_clk",	csi0_vfe_clk.c,	"msm_camera_ov9726.0"),
@@ -332,6 +346,9 @@ static struct clk_lookup msm_cmn_clk_7625a_7627a[] __initdata = {
 	CLK_LOOKUP("csi_clk",		csi0_clk.c,	"msm_camera_ov7695.0"),
 	CLK_LOOKUP("csi_pclk",		csi0_p_clk.c,	"msm_camera_ov7695.0"),
 	CLK_LOOKUP("csi_vfe_clk",	csi0_vfe_clk.c,	"msm_camera_ov7695.0"),
+	CLK_LOOKUP("csi_clk",		csi0_clk.c,	"msm_camera_mt9v115.0"),
+	CLK_LOOKUP("csi_pclk",		csi0_p_clk.c,	"msm_camera_mt9v115.0"),
+	CLK_LOOKUP("csi_vfe_clk",	csi0_vfe_clk.c,	"msm_camera_mt9v115.0"),
 	CLK_LOOKUP("csi_clk",		csi1_clk.c,	NULL),
 	CLK_LOOKUP("csi_pclk",		csi1_p_clk.c,	NULL),
 	CLK_LOOKUP("csi_vfe_clk",	csi1_vfe_clk.c,	NULL),

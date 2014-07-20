@@ -53,32 +53,42 @@ static void gpio_led_set(struct led_classdev *led_cdev,
 	struct gpio_led_data *led_dat =
 		container_of(led_cdev, struct gpio_led_data, cdev);
 	int level;
-
+	
+	pr_debug( "Enter gpio_led_set\n ");
 	if (value == LED_OFF)
 		level = 0;
 	else
 		level = 1;
-
+	pr_debug( "value =  %d\n",value);
+	
+	
 	if (led_dat->active_low)
 		level = !level;
-
+	pr_debug( "level =  %d\n",level);
+	
 	/* Setting GPIOs with I2C/etc requires a task context, and we don't
 	 * seem to have a reliable way to know if we're already in one; so
 	 * let's just assume the worst.
 	 */
+	pr_debug( "led_dat->can_sleep =  %d\n",led_dat->can_sleep);
 	if (led_dat->can_sleep) {
 		led_dat->new_level = level;
 		schedule_work(&led_dat->work);
 	} else {
+	pr_debug( "led_dat->blinking =  %d\n",led_dat->blinking);
 		if (led_dat->blinking) {
 			led_dat->platform_gpio_blink_set(led_dat->gpio, level,
 							 NULL, NULL);
 			led_dat->blinking = 0;
 		} else
+		{
+			pr_debug( "led_dat->gpio =  %d\n",led_dat->gpio);
+			pr_debug( "level =  %d\n",level);
 			gpio_set_value(led_dat->gpio, level);
+		}
 	}
+	pr_debug( "Exit gpio_led_set... \n");
 }
-
 static int gpio_blink_set(struct led_classdev *led_cdev,
 	unsigned long *delay_on, unsigned long *delay_off)
 {
@@ -231,24 +241,41 @@ static struct gpio_leds_priv * __devinit gpio_leds_create_of(struct platform_dev
 #define of_gpio_leds_match NULL
 #endif /* CONFIG_OF_GPIO */
 
-
 static int __devinit gpio_led_probe(struct platform_device *pdev)
 {
 	struct gpio_led_platform_data *pdata = pdev->dev.platform_data;
 	struct gpio_leds_priv *priv;
 	int i, ret = 0;
-
+	static unsigned button_leds_gpio;
+	int using_led_gpio;
+	
+	printk(KERN_ERR "PM_DEBUG_MXP:Enter gpio_led_probe\n");
+	
 	if (pdata && pdata->num_leds) {
 		priv = kzalloc(sizeof_gpio_leds_priv(pdata->num_leds),
 				GFP_KERNEL);
 		if (!priv)
 			return -ENOMEM;
 
+		printk(KERN_ERR "PM_DEBUG_MXP:pdata->num_leds = %d.\n",pdata->num_leds);
 		priv->num_leds = pdata->num_leds;
 		for (i = 0; i < priv->num_leds; i++) {
+			printk(KERN_ERR "PM_DEBUG_MXP:pdata->leds[i]->gpio = %d.\n",pdata->leds[i].gpio);
+			using_led_gpio = pdata->leds[i].gpio;
+			printk(KERN_ERR "PM_DEBUG_MXP:using_led_gpio = %d.\n",using_led_gpio);
+			button_leds_gpio = GPIO_CFG(using_led_gpio, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA);
+			ret= gpio_tlmm_config(button_leds_gpio,GPIO_CFG_ENABLE);
+			printk(KERN_ERR "PM_DEBUG_MXP:ret = %d.\n",ret);
+			if (ret) 
+			{
+				printk(KERN_ERR "PM_DEBUG_MXP:%s: gpio_tlmm_config(%#x)=%d\n", __func__, button_leds_gpio, ret);
+				return -EIO;
+			}
+			
 			ret = create_gpio_led(&pdata->leds[i],
 					      &priv->leds[i],
 					      &pdev->dev, pdata->gpio_blink_set);
+			printk(KERN_ERR "PM_DEBUG_MXP:after create gpio led,ret =%d\n", ret);
 			if (ret < 0) {
 				/* On failure: unwind the led creations */
 				for (i = i - 1; i >= 0; i--)
@@ -264,7 +291,7 @@ static int __devinit gpio_led_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, priv);
-
+	printk(KERN_ERR "PM_DEBUG_MXP:Exit gpio_led_probe\n");
 	return 0;
 }
 

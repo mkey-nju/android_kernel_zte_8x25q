@@ -30,7 +30,11 @@ config FB_MSM_LOGO
 config FB_MSM_LCDC_HW
 	bool
 	default n
-
+#[ECID:000000] ZTEBSP wangminrong  start 20120419 for A20 or A10 or E01  */
+config LCD_P865F04
+	bool
+	default y
+#[ECID:000000] ZTEBSP wangminrong  end 20120419 for A20 or A10 or E01  */	
 config FB_MSM_TRIPLE_BUFFER
 	bool "Support for triple frame buffer"
 	default n
@@ -100,6 +104,12 @@ config FB_MSM_MDP_NONE
 	  Say Y here if this is mdm platform.
 
 endchoice
+
+#ZTEBSP  yaotierui
+config FB_MSM_GPIO
+        tristate "LED CONFIG_FB_MSM_GPIO Support for different gpio"
+        default n
+        depends on FB_MSM_MIPI_DSI
 
 config FB_MSM_EBI2
 	bool
@@ -179,6 +189,30 @@ config FB_MSM_MIPI_DSI_TOSHIBA
 	select FB_MSM_MIPI_DSI
 	default n
 
+#ZTEBSP yaotierui added
+config FB_MSM_MIPI_DSI_LEAD
+	bool
+	select FB_MSM_MIPI_DSI
+	default n
+	
+#//[ECID:0000]ZTE_BSP maxiaoping 20120427 for lcd backlight driver,start.
+config TPS61165_LCD_BL
+        bool "TPS61165 flexble one wire  Backlight Driver support"
+        default y
+	---help---
+       If you have a one wire flexble backlight adjustable by the TPS61165,
+        say Y to enable this driver.
+#//[ECID:0000]ZTE_BSP maxiaoping 20120427 for lcd backlight driver,end.
+
+#//[ECID:0000]ZTE_BSP zhangqi 20120626 for lcd backlight CABC driver,start.
+config BACKLIGHT_CABC
+        bool "Backlight CABC func macro , compatible with TPS61165 driver"
+        default n
+	---help---
+       If you want have CABC func and compatible with TPS61165,
+        say Y to enable this driver.
+#//[ECID:0000]ZTE_BSP zhangqi 20120626 for lcd backlight CABC driver,end.
+
 config FB_MSM_MIPI_DSI_RENESAS
 	bool
 	select FB_MSM_MIPI_DSI
@@ -203,6 +237,14 @@ config FB_MSM_MIPI_DSI_NT35510
 	select FB_MSM_MIPI_DSI
 
 config FB_MSM_MIPI_DSI_HX8389B
+	bool
+	select FB_MSM_MIPI_DSI
+
+config FB_MSM_MIPI_DSI_HX8392A
+	bool
+	select FB_MSM_MIPI_DSI
+
+config FB_MSM_MIPI_DSI_OTM9605A
 	bool
 	select FB_MSM_MIPI_DSI
 
@@ -325,6 +367,12 @@ config FB_MSM_MIPI_TOSHIBA_VIDEO_WVGA_PT
 	select FB_MSM_MIPI_DSI_TOSHIBA
 	default n
 
+#ZTEBSP  yaotierui modified this macro
+config FB_MSM_MIPI_LEAD_VIDEO_WVGA_PT
+	bool
+	select FB_MSM_MIPI_DSI_LEAD
+	default n
+	
 config FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT
 	bool
 	select FB_MSM_MIPI_DSI_TOSHIBA
@@ -378,6 +426,16 @@ config FB_MSM_MIPI_NT35510_CMD_WVGA_PT
 config FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT
 	bool
 	select FB_MSM_MIPI_DSI_HX8389B
+	default n
+
+config FB_MSM_MIPI_HX8392A_VIDEO_720P_PT
+        bool
+        select FB_MSM_MIPI_DSI_HX8392A
+        default n
+
+config FB_MSM_MIPI_OTM9605A_VIDEO_QHD_PT
+	bool
+	select FB_MSM_MIPI_DSI_OTM9605A
 	default n
 
 config FB_MSM_MIPI_NT35516_VIDEO_QHD_PT
@@ -560,9 +618,11 @@ config FB_MSM_TRY_MDDI_CATCH_LCDC_PRISM
 	  Support for MDDI panel auto detect.
 	  If it can't find any MDDI panel, it will load an LCDC panel.
 
+#ZTEBSP yaotierui
 config FB_MSM_MIPI_PANEL_DETECT
 	bool "MIPI Panel Detect"
 	select FB_MSM_MIPI_TOSHIBA_VIDEO_WVGA_PT
+	select FB_MSM_MIPI_LEAD_VIDEO_WVGA_PT
 	select FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT
 	select FB_MSM_MIPI_TOSHIBA_VIDEO_WUXGA
 	select FB_MSM_MIPI_RENESAS_VIDEO_FWVGA_PT
@@ -573,6 +633,8 @@ config FB_MSM_MIPI_PANEL_DETECT
 	select FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT
 	select FB_MSM_MIPI_NT35510_CMD_WVGA_PT
 	select FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT
+	select FB_MSM_MIPI_HX8392A_VIDEO_720P_PT
+	select FB_MSM_MIPI_OTM9605A_VIDEO_QHD_PT
 	select FB_MSM_MIPI_ORISE_VIDEO_720P_PT
 	select FB_MSM_MIPI_ORISE_CMD_720P_PT
 	select FB_MSM_MIPI_NT35516_VIDEO_QHD_PT
@@ -618,6 +680,8 @@ config FB_MSM_LCDC_MIPI_PANEL_AUTO_DETECT
 	select FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT
 	select FB_MSM_MIPI_NT35510_CMD_WVGA_PT
 	select FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT
+	select FM_MSM_MIPI_HX8392A_VIDEO_720P_PT
+	select FB_MSM_MIPI_OTM9605A_VIDEO_QHD_PT
 	select FB_MSM_MIPI_NT35516_VIDEO_QHD_PT
 	select FM_MSM_MIPI_NT35516_CMD_QHD_PT
 	select FM_MSM_MIPI_NT35590_CMD_720P_PT
@@ -641,6 +705,7 @@ config FB_MSM_LVDS_MIPI_PANEL_DETECT
 	select FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT
 	select FB_MSM_MIPI_NT35510_CMD_WVGA_PT
 	select FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT
+	select FB_MSM_MIPI_OTM9605A_VIDEO_QHD_PT
 	select FB_MSM_MIPI_ORISE_VIDEO_720P_PT
 	select FB_MSM_MIPI_ORISE_CMD_720P_PT
 	select FB_MSM_MIPI_SIMULATOR_VIDEO
@@ -682,6 +747,11 @@ config FB_MSM_MDDI_SHARP_QVGA_128x128
 config FB_MSM_MIPI_TOSHIBA_VIDEO_WVGA_PT_PANEL
 	bool "MIPI Toshiba WVGA PT Panel"
 	select FB_MSM_MIPI_TOSHIBA_VIDEO_WVGA_PT
+
+#ZTEBSP yaotierui
+config FB_MSM_MIPI_LEAD_VIDEO_WVGA_PT_PANEL
+	bool "MIPI Lead WVGA PT Panel"
+	select FB_MSM_MIPI_LEAD_VIDEO_WVGA_PT
 
 config FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT_PANEL
 	bool "MIPI Toshiba WSVGA PT Panel"
@@ -738,6 +808,19 @@ config FB_MSM_MIPI_NT35510_CMD_WVGA_PT_PANEL
 config FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT_PANEL
 	bool "MIPI HX8389B Video QHD PT Panel"
 	select FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT
+
+config FB_MSM_MIPI_HX8392A_VIDEO_720P_PT_PANEL
+        bool "MIPI HX8392A Video 720p PT Panel"
+        select FB_MSM_MIPI_HX8392A_VIDEO_720P_PT
+	---help---
+	Support for Truly HX8392A panel. This
+	panel supports MIPI DSI interface in
+	Video mode. The panel resolution is
+	720p (720x1280).
+
+config FB_MSM_MIPI_OTM9605A_VIDEO_QHD_PT_PANEL
+	bool "MIPI OTM9605A Video QHD PT Panel"
+	select FB_MSM_MIPI_OTM9605A_VIDEO_QHD_PT
 
 config FB_MSM_MIPI_NT35516_VIDEO_QHD_PT_PANEL
         bool "MIPI NT35516 Video qHD PT Panel"
@@ -1011,3 +1094,23 @@ if FB_MSM_MDSS
 	source "drivers/video/msm/mdss/Kconfig"
 endif
 endif
+#[ECID:000000] ZTEBSP shihuiqin  20120920 for QHD  */
+config QHD_LCM
+	bool "QHD_LCM"
+	default n
+#[ECID:000000] ZTEBSP shihuiqin  20120920 for QHD  */
+
+config CONTINOUS_LOGO
+	bool "continous display logo"
+	default n
+#[ECID:617001723914]ZTEBSP wangminrong modify the white screen off the backlight and reset 20120917 start for A20 taiwan
+config PROJECT_P825A20_S_TW
+	bool "for taiwan xiangmu"
+	default n
+#[ECID:617001723914] ZTEBSP the CONFIG_LOGO_TWO will display the two logo in LK and kernel.20120919
+config LOGO_TWO
+	bool "for second logo"
+	default n
+config LEAD_DISPLASY
+	bool "for mipi_lead.c file two logo"
+	default n	

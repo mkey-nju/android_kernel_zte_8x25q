@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2013 The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -213,21 +213,21 @@ static int msm_csic_config(struct csic_cfg_params *cfg_params)
 		break;
 	}
 
-	msm_camera_io_w(0xF077F3C0, csicbase + MIPI_INTERRUPT_MASK);
+	msm_camera_io_w(0xF01FF3CF, csicbase + MIPI_INTERRUPT_MASK);
 	/*clear IRQ bits*/
-	msm_camera_io_w(0xF077F3C0, csicbase + MIPI_INTERRUPT_STATUS);
+	msm_camera_io_w(0xF01FF3CF, csicbase + MIPI_INTERRUPT_STATUS);
 
 	return rc;
 }
-
+#if DBG_CSIC 
 static irqreturn_t msm_csic_irq(int irq_num, void *data)
 {
 	uint32_t irq;
 	struct csic_device *csic_dev = data;
 
-	pr_info("msm_csic_irq: %x\n", (unsigned int)csic_dev->base);
+	//pr_info("msm_csic_irq: %x\n", (unsigned int)csic_dev->base);
 	irq = msm_camera_io_r(csic_dev->base + MIPI_INTERRUPT_STATUS);
-	pr_info("%s MIPI_INTERRUPT_STATUS = 0x%x 0x%x\n",
+	printk("%s MIPI_INTERRUPT_STATUS = 0x%x 0x%x\n",
 		__func__, irq,
 		msm_camera_io_r(csic_dev->base + MIPI_PROTOCOL_CONTROL));
 	msm_camera_io_w(irq, csic_dev->base + MIPI_INTERRUPT_STATUS);
@@ -237,7 +237,7 @@ static irqreturn_t msm_csic_irq(int irq_num, void *data)
 		pr_info("Unsupported packet format is received\n");
 	return IRQ_HANDLED;
 }
-
+#endif
 static int msm_csic_subdev_g_chip_ident(struct v4l2_subdev *sd,
 			struct v4l2_dbg_chip_ident *chip)
 {
@@ -412,6 +412,7 @@ static int __devinit csic_probe(struct platform_device *pdev)
 		rc = -ENODEV;
 		goto csic_no_resource;
 	}
+#if DBG_CSIC 
 	new_csic_dev->irq = platform_get_resource_byname(pdev,
 					IORESOURCE_IRQ, "csic");
 	if (!new_csic_dev->irq) {
@@ -419,6 +420,7 @@ static int __devinit csic_probe(struct platform_device *pdev)
 		rc = -ENODEV;
 		goto csic_no_resource;
 	}
+#endif
 	new_csic_dev->io = request_mem_region(new_csic_dev->mem->start,
 		resource_size(new_csic_dev->mem), pdev->name);
 	if (!new_csic_dev->io) {
@@ -426,7 +428,7 @@ static int __devinit csic_probe(struct platform_device *pdev)
 		rc = -EBUSY;
 		goto csic_no_resource;
 	}
-
+#if DBG_CSIC 
 	rc = request_irq(new_csic_dev->irq->start, msm_csic_irq,
 		IRQF_TRIGGER_HIGH, "csic", new_csic_dev);
 	if (rc < 0) {
@@ -437,7 +439,7 @@ static int __devinit csic_probe(struct platform_device *pdev)
 		goto csic_no_resource;
 	}
 	disable_irq(new_csic_dev->irq->start);
-
+#endif
 	new_csic_dev->pdev = pdev;
 
 	rc = msm_cam_clk_enable(&new_csic_dev->pdev->dev, &csic_7x_clk_info[2],

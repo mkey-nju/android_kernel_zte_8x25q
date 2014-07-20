@@ -13,27 +13,87 @@ comment "Camera Sensor Selection"
 config MT9T013
 	bool "Sensor mt9t013 (BAYER 3M)"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !ARCH_MSM8960 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  MICRON 3M Bayer Sensor with AutoFocus
 config MT9D113
 	bool "Sensor mt9d113 (YUV 2M)"
 	depends on MSM_CAMERA && ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  MICRON 2M YUV Sensor
 	  This sensor is the front camera on QT8660.
 	  This uses csi mipi interface.
 	  This sensor is used only on QT device.
+	  
+#ZTEBSP yuxin add for P865E02 cam sensors,2012.10.19 ++
+config OV2675
+	bool "Sensor OV2675 (2M YUV)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	  Omni Vision 2M YUV Sensor
+	  
+
+config SP0A28
+	bool "Sensor SP0A28 (2M YUV)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	  SUPERPIX 0.3M YUV SENSOR
+#ZTEBSP yuxin add for P865E02 cam sensors,2012.10.19 --	 
+
+config HI542
+	bool "Sensor HI542 (RAW 5M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	HYNIX hi542 5M raw Sensor
+
+ 	  
+#ZTEBSP yuxin add for mt9d115,2012.01.31 ++  
+config MT9D115
+	bool "Sensor mt9d115 (YUV 2M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	  MICRON 2M YUV Sensor
+	  
+#ZTEBSP zhangzhao add for OV5640,2012.4.23 ++ 
+config JT8EV5
+	bool "Sensor JT8EV5 (YUV 5M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	TOSHIBA 5M YUV Sensor
+ 
+config OV5640
+	bool "Sensor OV5640 (YUV 5M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	Omni 5M YUV Sensor
+
+config S5K5CA
+	bool "Sensor S5K5CA (YUV 3M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	SAMSANG 3M YUV Sensor
+#ZTEBSP yuxin add for mt9d115,2012.01.31 --
+#ZTEBSP zhangzhao add for OV5640,2012.04.23 --
 config MT9D112
 	bool "Sensor mt9d112 (YUV 2M)"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !ARCH_MSM8960 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  MICRON 2M YUV Sensor
+#ZTEBSP zhangzhao add for OV5640,2012.04.23 --
+	  
 config IMX074
 	bool "Sensor IMX074 (BAYER 13.5M)"
 	depends on MSM_CAMERA
+	default n
 	---help---
 	SONY 13.5 MP Bayer Sensor
 config OV5640
@@ -45,16 +105,25 @@ config OV5640
 config OV5647
 	bool "Sensor ov5647 (BAYER 5M)"
 	depends on MSM_CAMERA
+	default n
 	---help---
 	  OV 5M Bayer Sensor with AutoFocus
-config OV5648
-	bool "Sensor ov5648 (BAYER 5M)"
+config OV5647_TRULY_CM6868
+	bool "Sensor ov5647(TRULY_CM6868) (BAYER 5M)"
 	depends on MSM_CAMERA
+	default n
+	---help---
+	  OV 5M Bayer Sensor with AutoFocus
+config OV5648_TRULY_CM8352
+	bool "Sensor ov5648(TRULY_CM8352) (BAYER 5M)"
+	depends on MSM_CAMERA
+	default n
 	---help---
 	  OV 5M Bayer Sensor with AutoFocus
 config AD5046_ACT
 	bool "Lens actuator ad5046"
 	depends on MSM_CAMERA && OV5647
+	default n
 	---help---
 	  ad5046 lens actuator driver for ov5647.
 	  Say Y here if this is msm7627A variant platform.
@@ -67,12 +136,13 @@ config WEBCAM_OV7692_QRD
 config MT9M114
         bool "Sensor MT9M114 (YUV 1.26M)"
         depends on MSM_CAMERA
+        default n
         ---help---
         APTINA 1.26 MP yuv Sensor
 config WEBCAM_OV7692
 	bool "Sensor OV7692 (VGA YUV)"
 	depends on MSM_CAMERA && ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  Omni Vision VGA YUV Sensor.
 config WEBCAM_OV9726
@@ -86,19 +156,19 @@ config WEBCAM_OV9726
 config VX6953
 	bool "Sensor VX6953 (BAYER 5M)"
 	depends on MSM_CAMERA && (ARCH_MSM7X30 || ARCH_MSM8X60) && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	STM 5M Bayer Sensor with EDOF
 config SN12M0PZ
 	bool "Sensor sn12m0pz (Bayer 12 MP)"
 	depends on MSM_CAMERA && ARCH_MSM7X30 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  Sony 12 MP Bayer Sensor
 config MT9P012
 	bool "Sensor mt9p012 (BAYER 5M)"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  MICRON 5M Bayer Sensor with Autofocus
 
@@ -122,7 +192,7 @@ endchoice
 config MT9P012_KM
 	bool "Sensor mt9p012 KM module (BAYER 5M)"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  MICRON 5M Bayer Sensor KM modules with Autofocus
 
@@ -136,20 +206,21 @@ config MT9E013
 config IMX074_ACT
 	bool "Actuator IMX074 (BAYER 13.5M)"
 	depends on MSM_CAMERA
+	default n
 	---help---
 	Actuator for SONY 13.5 MP Bayer Sensor
 
 config S5K3E2FX
 	bool "Sensor s5k3e2fx (Samsung 5M)"
 	depends on MSM_CAMERA && !ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  Samsung 5M with Autofocus
 
 config QS_S5K4E1
 	bool "Sensor qs_s5k4e1 (Samsung 5M)"
 	depends on MSM_CAMERA && ARCH_MSM8X60 && !MSM_CAMERA_V4L2
-	default y
+	default n
 	---help---
 	  Samsung 5M with Autofocus
 
@@ -163,9 +234,49 @@ config S5K4E1
 	  two mipi lanes, required for msm7x2xA platform.
 	  Say Y here if this is msm7x2xA variant platform.
 
+config AR0543
+	bool "Sensor ar0543 (BAYER 5M)"
+	default n
+	---help---
+	  Aptina Bayer Sensor with FixFocus
+config A8140
+	bool "Sensor a8140 (BAYER 8M)"
+	default n
+	---help---
+	  Aptina Bayer Sensor with AutoFocus
+
+config S5K3H2_SUNNY_Q8S02E
+	bool "Sensor Sensor s5k3h2 (Samsung 8M)"
+	default n
+	---help---
+	  Samsung 8M with Autofocus
+config AR0542
+	bool "Sensor ar0542 (BAYER 5M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	  Aptina Bayer 5M RAW Sensor
+#ZTEBSP yuxin add for P865G01 PRJ 2013.01.16	  
+config T4K04
+	bool "Sensor t4k04 (BAYER 8M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	  Toshiba Bayer 8M RAW Sensor
+	  
+#ZTEBSP yuxin add for T4k04 ACT DRIVER  2013.02.17 
+config ROHM_BU64291GWZ_ACT
+	bool "Lens actuator BU64291GWZ"
+	depends on MSM_CAMERA && T4K04
+	default y
+	---help---
+	  BU64291GWZ lens actuator driver for T4K04.
+	  Say Y here if this is msm7627A variant platform.
+	  
 config DW9712_ACT
 	bool "Lens actuator dw9721"
 	depends on MSM_CAMERA && S5K4E1
+	default n
 	---help---
 	  dw9721 lens actuator driver for S5K4E1.
 	  Say Y here if this is msm7627A variant platform.
@@ -189,6 +300,28 @@ config MSM_CAMERA_FLASH_TPS61310
 	  It is a Texas Instruments multiple LED Flash
 	  for camera flash and video light applications.
 
+#[ECID:000000] ZTEBSP wangbing, for camera soc flash, 20120702 +++
+config MSM_CAMERA_FLASH_ADP1655
+	bool "ZTE camera ADP1655 flash support"
+	depends on MSM_CAMERA
+	default n
+	---help---
+	  Enable support for LED flash for msm camera.
+	  It is a samtech charge pump flash driver and it
+	  supports spotlight and flash light modes with
+	  differrent current levels.
+
+config ZTE_CAMERA_SOC_FLASH
+	bool "ZTE camera flash control support"
+	depends on MSM_CAMERA
+	default n
+	---help---
+	  Enable support for LED flash for msm camera.
+	  It is a samtech charge pump flash driver and it
+	  supports spotlight and flash light modes with
+	  differrent current levels.
+#[ECID:000000] ZTEBSP wangbing, for camera soc flash, 20120702 ---
+
 config IMX072
 	bool "Sensor imx072 (Sony 5M)"
 	default n
@@ -201,10 +334,12 @@ config IMX072
 config OV2720
 	bool "Sensor ov2720 (Omnivision 2MP)"
 	depends on MSM_CAMERA
+	default n
 
 config OV8825
 	bool "Sensor ov8825 (Omnivision 8M)"
 	depends on MSM_CAMERA
+	default n
 	---help---
 	  Support for OV8825 sensor driver.
 	  It is a Bayer 8MP sensor with auto focus and it supports
@@ -281,6 +416,7 @@ config S5K3L1YX
 config IMX091
         bool "Sensor imx091 (Sony 13MP)"
         depends on MSM_CAMERA
+        default n
 	---help---
 	  Sony 13MP sensor back camera that uses 4 mipi lanes,
 	  runs at 30 fps preview and 14 fps snapshot
@@ -296,6 +432,7 @@ config MSM_V4L2_VIDEO_OVERLAY_DEVICE
 config OV7692
 	bool "Sensor OV7692 (VGA YUV)"
 	depends on MSM_CAMERA
+	default n
 	---help---
 	  Omni Vision VGA YUV Sensor
 config OV7695
@@ -310,3 +447,17 @@ config OV7695_RAW
 	default n
 	---help---
 	  Omni Vision BAYER Sensor for QRD Devices
+config MT9V115
+	bool "Sensor mt9v115 (BAYER 3M)"
+	depends on MSM_CAMERA && MSM_CAMERA_V4L2
+	default n
+	---help---
+	  MICRON 3M YUV Sensor for QRD Devices
+
+#wangjianping 20121031 added camera flash LM3642
+config FLASH_LM3642
+	bool "CAMERA FLASH_LM3642"
+	depends on MSM_CAMERA
+	default n
+	---help---
+	  Cemara Flash LM3462

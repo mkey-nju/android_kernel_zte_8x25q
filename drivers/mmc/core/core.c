@@ -1987,11 +1987,14 @@ int mmc_can_reset(struct mmc_card *card)
 {
 	u8 rst_n_function;
 
-	if (!mmc_card_mmc(card))
+	if (mmc_card_sdio(card))
 		return 0;
-	rst_n_function = card->ext_csd.rst_n_function;
-	if ((rst_n_function & EXT_CSD_RST_N_EN_MASK) != EXT_CSD_RST_N_ENABLED)
-		return 0;
+
+	if (mmc_card_mmc(card)) {
+		rst_n_function = card->ext_csd.rst_n_function;
+		if ((rst_n_function & EXT_CSD_RST_N_EN_MASK) != EXT_CSD_RST_N_ENABLED)
+			return 0;
+	}
 	return 1;
 }
 EXPORT_SYMBOL(mmc_can_reset);
@@ -2472,6 +2475,7 @@ EXPORT_SYMBOL(mmc_cache_ctrl);
 int mmc_suspend_host(struct mmc_host *host)
 {
 	int err = 0;
+	struct mmc_card *card = host->card;
 
 	if (mmc_bus_needs_resume(host))
 		return 0;
@@ -2531,6 +2535,10 @@ int mmc_suspend_host(struct mmc_host *host)
 		}
 	}
 	mmc_bus_put(host);
+	if (card != NULL && card->cid.manfid == 0x90)
+	{
+		host->pm_flags |= MMC_PM_KEEP_POWER;
+	}
 
 	if (!err && !mmc_card_keep_power(host))
 		mmc_power_off(host);

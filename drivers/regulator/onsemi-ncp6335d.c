@@ -19,6 +19,7 @@
 #include <linux/regmap.h>
 #include <linux/log2.h>
 #include <linux/regulator/onsemi-ncp6335d.h>
+#include <linux/platform_device.h>
 
 /* registers */
 #define REG_NCP6335D_PID		0x03
@@ -50,6 +51,9 @@
 #define NCP6335D_SLEW_SHIFT		0x3
 #define NCP6335D_TSD_MASK		0x01
 #define NCP6335D_TSD_VAL		0x00
+
+#define NCP6335D_DELAY_MASK 0xE0
+#define NCP6335D_DELAY_SHIFT 0x5
 
 struct ncp6335d_info {
 	struct regulator_dev *regulator;
@@ -326,7 +330,12 @@ static int __devinit ncp6335d_init(struct ncp6335d_info *dd,
 		val = ilog2(val);
 	else
 		dd->slew_rate = NCP6335D_MIN_SLEW_NS;
-
+       #if 1
+		rc = regmap_update_bits(dd->regmap, REG_NCP6335D_TIMING,
+			NCP6335D_DELAY_MASK, val << NCP6335D_DELAY_SHIFT);
+		if (rc)
+			dev_err(dd->dev, "Unable to set slew rate rc(%d)\n", rc);
+	#endif
 	rc = regmap_update_bits(dd->regmap, REG_NCP6335D_TIMING,
 			NCP6335D_SLEW_MASK, val << NCP6335D_SLEW_SHIFT);
 	if (rc)
@@ -449,15 +458,94 @@ static struct i2c_driver ncp6335d_regulator_driver = {
 	.remove = __devexit_p(ncp6335d_regulator_remove),
 	.id_table = ncp6335d_id,
 };
+
+static inline int ncp6335d_read(struct i2c_client* client, u8 reg)
+{
+	return i2c_smbus_read_byte_data(client,	reg);
+}
+
+
+bool vdd_cx_buck_detected = false;
+EXPORT_SYMBOL(vdd_cx_buck_detected);
+static int __devinit ncp6335d_pdev_probe(struct platform_device* pdev)
+{
+	int rc = 0;
+	unsigned int val = 0;
+	struct ncp6335d_i2c_platform_data* pdata = NULL;
+	struct i2c_adapter *adapter = NULL;
+	struct i2c_client *client = NULL;
+
+	if(vdd_cx_buck_detected)
+		return -EINVAL;
+
+	pdata = (struct ncp6335d_i2c_platform_data*)pdev->dev.platform_data;
+	if(pdata == NULL)
+	{
+		dev_err(&pdev->dev, "can't find the platform data\n");
+		return -EINVAL;
+	}
+
+	adapter = i2c_get_adapter(pdata->i2c_bus_id);
+	if (IS_ERR(adapter)) {
+		dev_err(&pdev->dev, "can't get i2c adapter for mp8845c\n");
+		rc = PTR_ERR(adapter);
+		goto probe_failed;		
+	}
+
+	client = i2c_new_device(adapter, pdata->i2c_info);
+	if (client ==NULL) {
+		dev_err(&pdev->dev, "can't create i2c device for mp8845c\n");
+		rc = -ENODEV;
+		goto probe_failed;
+	}
+	
+	val = ncp6335d_read(client, REG_NCP6335D_PID);
+	if(val != 0x10)	//default PID = 0x10
+	{
+		dev_err(&client->dev, "Detected Regulator NCP6335D = %d\n", val);
+		goto unreg_i2c_device;
+	}
+
+	vdd_cx_buck_detected = true;
+		
+	rc = i2c_add_driver(&ncp6335d_regulator_driver);
+	if(rc)
+	{
+		dev_err(&client->dev, "add mp8845c i2c driver failed\n");
+		goto unreg_i2c_device;
+	}
+	return rc;
+	
+unreg_i2c_device:	
+	i2c_unregister_device(client);
+probe_failed:
+	return rc;
+
+}
+static int __devexit ncp6335d_pdev_remove(struct platform_device* pdev)
+{
+	i2c_del_driver(&ncp6335d_regulator_driver);
+	return 0;
+}
+
+static struct platform_driver ncp6335d_pdev_driver = {
+	.driver = {
+		.name = "ncp6335d_ldo",
+		.owner = THIS_MODULE,
+	},
+	.probe = ncp6335d_pdev_probe,
+	.remove = __devexit_p(ncp6335d_pdev_remove),
+};
+
 static int __init ncp6335d_regulator_init(void)
 {
-	return i2c_add_driver(&ncp6335d_regulator_driver);
+	return platform_driver_register(&ncp6335d_pdev_driver);
 }
 fs_initcall(ncp6335d_regulator_init);
 
 static void __exit ncp6335d_regulator_exit(void)
 {
-	i2c_del_driver(&ncp6335d_regulator_driver);
+	platform_driver_unregister(&ncp6335d_pdev_driver);
 }
 module_exit(ncp6335d_regulator_exit);
 

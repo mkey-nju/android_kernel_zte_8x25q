@@ -46,6 +46,11 @@
 #include <mach/proc_comm.h>
 #include <asm/smp_scu.h>
 
+#ifdef CONFIG_MSM_SM_EVENT
+#include <linux/sm_event_log.h>
+#include <linux/sm_event.h>
+#endif
+
 #include "smd_private.h"
 #include "smd_rpcrouter.h"
 #include "acpuclock.h"
@@ -879,15 +884,19 @@ static int msm_pm_power_collapse
 	struct msm_pm_polled_group state_grps[2];
 	unsigned long saved_acpuclk_rate;
 	int collapsed = 0;
+#ifdef CONFIG_MSM_SM_EVENT
+	uint64_t sclk_suspend_time = 0, sclk_resume_time, sclk_period;
+#endif
 	int ret;
 	int val;
 	int modem_early_exit = 0;
 
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x1;
-	/* This location tell us we are doing a PC */
+
+	/* this location tell us we are doing a PC */
 	*(uint32_t *)(virt_start_ptr + 0x34) = 0x1;
 
-	/* This location tell us what PC we are doing
+	/* this location tell us what PC we are doing
 	 * i.e. idle/suspend
 	 * idlePC	--> 0x2
 	 * suspendPC	--> 0x1
@@ -922,13 +931,26 @@ static int msm_pm_power_collapse
 
 	msm_pm_irq_extns->enter_sleep1(true, from_idle,
 						&msm_pm_smem_data->irq_mask);
-	msm_sirc_enter_sleep();
-	msm_gpio_enter_sleep(from_idle);
 
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x2;
 
 	msm_pm_smem_data->sleep_time = sleep_delay;
 	msm_pm_smem_data->resources_used = sleep_limit;
+
+	saved_acpuclk_rate = acpuclk_power_collapse();
+	MSM_PM_DPRINTK(MSM_PM_DEBUG_CLOCK, KERN_INFO,
+		"%s(): change clock rate (old rate = %lu)\n", __func__,
+		saved_acpuclk_rate);
+
+	if (saved_acpuclk_rate == 0) {
+		ret = -EAGAIN;
+		goto acpu_set_clock_fail;
+	}
+
+	msm_sirc_enter_sleep();
+	msm_gpio_enter_sleep(from_idle);
+
+	*(uint32_t *)(virt_start_ptr + 0x30) = 0x3;
 
 	/* Enter PWRC/PWRC_SUSPEND */
 
@@ -965,7 +987,7 @@ static int msm_pm_power_collapse
 		goto power_collapse_early_exit;
 	}
 
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x3;
+	*(uint32_t *)(virt_start_ptr + 0x30) = 0x4;
 
 	/* DEM Master in RSA */
 
@@ -981,18 +1003,18 @@ static int msm_pm_power_collapse
 		goto power_collapse_early_exit;
 	}
 
+#ifdef CONFIG_MSM_SM_EVENT
+	if (!from_idle)
+		sclk_suspend_time = msm_timer_get_sclk_time(&sclk_period);
+#endif
 	msm_pm_config_hw_before_power_down();
 	MSM_PM_DEBUG_PRINT_STATE("msm_pm_power_collapse(): pre power down");
 
-	saved_acpuclk_rate = acpuclk_power_collapse();
-	MSM_PM_DPRINTK(MSM_PM_DEBUG_CLOCK, KERN_INFO,
-		"%s(): change clock rate (old rate = %lu)\n", __func__,
-		saved_acpuclk_rate);
-
-	if (saved_acpuclk_rate == 0) {
-		msm_pm_config_hw_after_power_up();
-		goto power_collapse_early_exit;
+#ifdef CONFIG_MSM_SM_EVENT
+	if (!from_idle) {
+		sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_SUSPEND, SM_EVENT_END, 0, 0, 0);
 	}
+#endif
 
 	/* save the AHB clock registers */
 	if (cpu_is_msm8625q()) {
@@ -1002,8 +1024,6 @@ static int msm_pm_power_collapse
 
 	msm_pm_boot_config_before_pc(smp_processor_id(),
 			virt_to_phys(msm_pm_collapse_exit));
-
-	*(uint32_t *)(virt_start_ptr + 0x30) = 0x4;
 
 #ifdef CONFIG_VFP
 	if (from_idle)
@@ -1049,6 +1069,18 @@ static int msm_pm_power_collapse
 						continue;
 					per_cpu(power_collapsed, cpu) = 1;
 				}
+				/** ZTE_MODIFY by zhangxiaobo 10072240 The patch is from Qualcomm 
+				 * Symptom:  Sometimes system partition file is lost in the MSM8x25Q platform. The affected file 
+				 *           is same in all devices with identical build. Sometimes it is GC crash by accessing invalid address. 
+                                 * Root cause: In a quad core system, the Linux kernel will allocate 4 variables such as ¡°power_collapsed_cpu1, 
+                                 *            power_collapsed_cpu2, power_collapsed_cpu3, power_collapsed_cpu4¡± . These 4 variables have separate 
+                                 *            memory address.  At the same time, variable such as ¡°power_collapsed¡± is exist, but it¡¯s space will 
+                                 *            be free. Function can access power_collapsed but will damage memory content. In this way, 
+				 *            will trigger unknown stability issues.
+				 */
+				//power_collapsed = 1;
+				
+				
 				/*
 				 * override DBGNOPOWERDN and program the GDFS
 				 * count val
@@ -1109,14 +1141,6 @@ static int msm_pm_power_collapse
 	MSM_PM_DPRINTK(MSM_PM_DEBUG_SUSPEND | MSM_PM_DEBUG_POWER_COLLAPSE,
 		KERN_INFO,
 		"%s(): msm_pm_collapse returned %d\n", __func__, collapsed);
-
-	MSM_PM_DPRINTK(MSM_PM_DEBUG_CLOCK, KERN_INFO,
-		"%s(): restore clock rate to %lu\n", __func__,
-		saved_acpuclk_rate);
-	if (acpuclk_set_rate(smp_processor_id(), saved_acpuclk_rate,
-			SETRATE_PC) < 0)
-		printk(KERN_ERR "%s(): failed to restore clock rate(%lu)\n",
-			__func__, saved_acpuclk_rate);
 
 	msm_pm_irq_extns->exit_sleep1(msm_pm_smem_data->irq_mask,
 		msm_pm_smem_data->wakeup_reason,
@@ -1194,7 +1218,28 @@ static int msm_pm_power_collapse
 		goto power_collapse_restore_gpio_bail;
 	}
 
+#ifdef CONFIG_MSM_SM_EVENT
+	if (!from_idle) {
+		int64_t time;
+		sm_set_system_state (SM_STATE_RESUME);
+		sclk_resume_time = msm_timer_get_sclk_time(NULL);
+
+		time = sclk_resume_time - sclk_suspend_time;
+		if (time < 0)
+			time += sclk_period;
+		do_div (time, 1000000);//milli-second
+		sm_add_event(SM_POWER_EVENT | SM_POWER_EVENT_RESUME, SM_EVENT_START, (uint32_t)time, (void *)msm_pm_smem_data, sizeof(*msm_pm_smem_data));
+	}
+#endif
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x16;
+
+	MSM_PM_DPRINTK(MSM_PM_DEBUG_CLOCK, KERN_INFO,
+		"%s(): restore clock rate to %lu\n", __func__,
+		saved_acpuclk_rate);
+	if (acpuclk_set_rate(smp_processor_id(), saved_acpuclk_rate,
+			SETRATE_PC) < 0)
+		printk(KERN_ERR "%s(): failed to restore clock rate(%lu)\n",
+			__func__, saved_acpuclk_rate);
 
 	/* DEM Master == RUN */
 
@@ -1285,23 +1330,32 @@ power_collapse_restore_gpio_bail:
 
 	MSM_PM_DEBUG_PRINT_STATE("msm_pm_power_collapse(): RUN");
 
+	MSM_PM_DPRINTK(MSM_PM_DEBUG_CLOCK, KERN_INFO,
+		"%s(): restore clock rate to %lu\n", __func__,
+		saved_acpuclk_rate);
+	if (acpuclk_set_rate(smp_processor_id(), saved_acpuclk_rate,
+			SETRATE_PC) < 0)
+		printk(KERN_ERR "%s(): failed to restore clock rate(%lu)\n",
+			__func__, saved_acpuclk_rate);
+
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x23;
 
 	if (collapsed)
 		smd_sleep_exit();
 
-	if (msm_cpr_ops)
+acpu_set_clock_fail:
+	if (msm_cpr_ops && from_idle)
 		msm_cpr_ops->cpr_resume();
 
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x24;
 
+power_collapse_bail:
 	if (cpu_is_msm8625() || cpu_is_msm8625q()) {
 		ret = msm_spm_set_low_power_mode(MSM_SPM_MODE_CLOCK_GATING,
 									false);
 		WARN_ON(ret);
 	}
 
-power_collapse_bail:
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x25;
 	*(uint32_t *)(virt_start_ptr + 0x34) = 0x0;
 	return ret;

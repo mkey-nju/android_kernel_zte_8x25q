@@ -1,7 +1,7 @@
 /* arch/arm/mach-msm/include/mach/board.h
  *
  * Copyright (C) 2007 Google, Inc.
- * Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2008-2012, The Linux Foundation. All Rights Reserved.
  * Author: Brian Swetland <swetland@google.com>
  *
  * This software is licensed under the terms of the GNU General Public
@@ -121,10 +121,15 @@ struct msm_camera_sensor_flash_current_driver {
 	const struct pmic8058_leds_platform_data *driver_channel;
 };
 
+
 enum msm_camera_ext_led_flash_id {
 	MAM_CAMERA_EXT_LED_FLASH_SC628A,
 	MAM_CAMERA_EXT_LED_FLASH_TPS61310,
+
+	MAM_CAMERA_EXT_LED_FLASH_ADP1655,
+	MAM_CAMERA_EXT_LED_FLASH_LM3642,	
 };
+
 
 struct msm_camera_sensor_flash_external {
 	uint32_t led_en;
@@ -253,6 +258,9 @@ enum msm_camera_actuator_name {
 	MSM_ACTUATOR_MAIN_CAM_5,
 	MSM_ACTUATOR_MAIN_CAM_6,
 	MSM_ACTUATOR_MAIN_CAM_7,
+	MSM_ACTUATOR_MAIN_CAM_8,
+	MSM_ACTUATOR_MAIN_CAM_9,
+	MSM_ACTUATOR_MAIN_CAM_10,
 	MSM_ACTUATOR_WEB_CAM_0,
 	MSM_ACTUATOR_WEB_CAM_1,
 	MSM_ACTUATOR_WEB_CAM_2,
@@ -278,6 +286,7 @@ struct msm_camera_sensor_info {
 	int sensor_pwd;
 	int vcm_pwd;
 	int vcm_enable;
+	int power_moto_gpio;//zhangzhao modified for mecnex sensor moto power
 	int mclk;
 	int flash_type;
 	struct msm_camera_sensor_platform_info *sensor_platform_info;

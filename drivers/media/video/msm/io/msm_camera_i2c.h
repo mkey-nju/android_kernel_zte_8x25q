@@ -48,6 +48,14 @@ enum msm_camera_i2c_data_type {
 enum msm_camera_i2c_cmd_type {
 	MSM_CAMERA_I2C_CMD_WRITE,
 	MSM_CAMERA_I2C_CMD_POLL,
+	
+	#ifdef CONFIG_OV5640
+	
+	MSM_CAMERA_I2C_CMD_CHECK,	
+	MSM_CAMERA_I2C_CMD_LOAD,
+	MSM_CAMERA_I2C_CMD_READ,
+	#endif
+	
 };
 
 struct msm_camera_i2c_reg_conf {

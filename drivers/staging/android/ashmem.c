@@ -1,4 +1,7 @@
-/* mm/ashmem.c
+/* 
+ * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ *
+ * mm/ashmem.c
 **
 ** Anonymous Shared Memory Subsystem, ashmem
 **
@@ -706,8 +709,11 @@ static int ashmem_cache_op(struct ashmem_area *asma,
 		vaddr += PAGE_SIZE) {
 		unsigned long physaddr;
 		physaddr = virtaddr_to_physaddr(vaddr);
-		if (!physaddr)
-			return -EINVAL;
+		if (!physaddr) {
+			pr_err("%s: the physaddr is NULL\n", __func__);
+			ret = -EINVAL;
+			goto done;
+		}
 		cache_func(vaddr, PAGE_SIZE, physaddr);
 	}
 #endif

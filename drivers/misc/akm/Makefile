@@ -1,0 +1,2 @@
+obj-$(CONFIG_AKM_SENSORS_AK8962) += akm8962.o
+obj-$(CONFIG_AKM_SENSORS_KXTF9)	 += kxtik.o

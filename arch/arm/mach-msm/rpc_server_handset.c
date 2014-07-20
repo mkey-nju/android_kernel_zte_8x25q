@@ -1,6 +1,6 @@
 /* arch/arm/mach-msm/rpc_server_handset.c
  *
- * Copyright (c) 2008-2010,2012 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2008-2010,2012 The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -53,6 +53,17 @@
 #define HS_REL_K		0xFF	/* key release */
 
 #define SW_HEADPHONE_INSERT_W_MIC 1 /* HS with mic */
+
+//shiyan added for chager on 2012.4.14
+#ifndef CONFIG_ZTE_PLATFORM
+#define CONFIG_ZTE_PLATFORM
+#endif
+
+#ifdef CONFIG_ZTE_PLATFORM   //added by shiyan
+#define HS_EXT_PWR_ON_K         0x78    /* External power was turned on        0x78    */
+#define HS_EXT_PWR_OFF_K        0x79    /* External power was turned off       0x79    */
+#endif
+//shiyan added for chager on 2012.4.14
 
 #define KEY(hs_key, input_key) ((hs_key << 24) | input_key)
 
@@ -189,12 +200,17 @@ static const uint32_t hs_key_map[] = {
 	KEY(HS_HEADSET_SWITCH_K, KEY_MEDIA),
 	KEY(HS_HEADSET_SWITCH_2_K, KEY_VOLUMEUP),
 	KEY(HS_HEADSET_SWITCH_3_K, KEY_VOLUMEDOWN),
+#ifdef CONFIG_ZTE_PLATFORM   //added by shiyan
+	KEY(HS_EXT_PWR_ON_K,KEY_WAKEUP),
+	KEY(HS_EXT_PWR_OFF_K,KEY_WAKEUP),
+#endif
 	0
 };
 
 enum {
 	NO_DEVICE	= 0,
 	MSM_HEADSET	= 1,
+	MSM_MIC	= 2,
 };
 /* Add newer versions at the top of array */
 static const unsigned int rpc_vers[] = {
@@ -316,6 +332,8 @@ static void report_hs_key(uint32_t key_code, uint32_t key_parm)
 				 __func__, temp_key_code);
 		return;
 	}
+	printk("\"%s\" key %s\n", key == KEY_POWER ? "POWER" : "OTHER", key_code != HS_REL_K ? "pressed" : "released");
+	
 	input_sync(hs->ipdev);
 }
 
@@ -600,6 +618,8 @@ static ssize_t msm_headset_print_name(struct switch_dev *sdev, char *buf)
 		return sprintf(buf, "No Device\n");
 	case MSM_HEADSET:
 		return sprintf(buf, "Headset\n");
+	case MSM_MIC:
+		return sprintf(buf, "Headset\n");
 	}
 	return -EINVAL;
 }
@@ -641,6 +661,9 @@ static int __devinit hs_probe(struct platform_device *pdev)
 	ipdev->id.product	= 1;
 	ipdev->id.version	= 1;
 
+#ifdef CONFIG_ZTE_PLATFORM   //added by shiyan
+	input_set_capability(ipdev, EV_KEY, KEY_WAKEUP);
+#endif
 	input_set_capability(ipdev, EV_KEY, KEY_MEDIA);
 	input_set_capability(ipdev, EV_KEY, KEY_VOLUMEUP);
 	input_set_capability(ipdev, EV_KEY, KEY_VOLUMEDOWN);
@@ -648,6 +671,7 @@ static int __devinit hs_probe(struct platform_device *pdev)
 	input_set_capability(ipdev, EV_SW, SW_MICROPHONE_INSERT);
 	input_set_capability(ipdev, EV_KEY, KEY_POWER);
 	input_set_capability(ipdev, EV_KEY, KEY_END);
+	set_bit(INPUT_PROP_NO_FAKE_RELEASE, ipdev->propbit);
 
 	rc = input_register_device(ipdev);
 	if (rc) {

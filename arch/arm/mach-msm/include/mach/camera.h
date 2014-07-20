@@ -13,7 +13,7 @@
 
 #ifndef __ASM__ARCH_CAMERA_H
 #define __ASM__ARCH_CAMERA_H
-
+#define DEBUG
 #include <linux/list.h>
 #include <linux/poll.h>
 #include <linux/cdev.h>
@@ -468,7 +468,22 @@ static inline int msm_flash_ctrl(
 }
 #endif
 
+	
+#ifdef CONFIG_ZTE_CAMERA_SOC_FLASH	
+typedef enum {
+  LED_MODE_OFF,
+  LED_MODE_AUTO,
+  LED_MODE_ON,
+  LED_MODE_TORCH,
 
+  /*new mode above should be added above this line*/
+  LED_MODE_MAX
+} led_mode_t;
+
+led_mode_t msm_flash_mode_get(void);
+void msm_flash_mode_set(led_mode_t flash_mode);
+int camera_flash_set_led_state(unsigned led_state, uint8_t curr_y);
+#endif
 
 void msm_camvfe_init(void);
 int msm_camvfe_check(void *);

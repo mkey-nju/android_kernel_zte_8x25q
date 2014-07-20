@@ -42,6 +42,26 @@ static const unsigned int tacc_mant[] = {
 	35,	40,	45,	50,	55,	60,	70,	80,
 };
 
+
+#define SAMSUNG_EMMC_MANUFACTURER_ID   0x15
+#define HYNIX_EMMC_MANUFACTURER_ID     0x90
+#define MICRON_EMMC_MANUFACTURER_ID     0xFE
+
+#include <linux/proc_fs.h>
+static struct proc_dir_entry * d_entry;
+static char emmc_module_name[52]={"0"};
+void init_emmc_info_proc(struct mmc_host *host);
+void deinit_emmc_info_proc(void);
+static int msm_emmc_info_read_samsung_proc(char *page, char **start, off_t off, int count, int *eof, void *data);
+static int msm_emmc_info_read_hynix_proc(char *page, char **start, off_t off, int count, int *eof, void *data);
+
+/**********haoweiwei add meiguang emmc start 20130531***********/
+static int msm_emmc_info_read_micron_proc(char *page, char **start, off_t off, int count, int *eof, void *data);
+/**********haoweiwei add meiguang emmc end 20130531***********/
+
+
+
+
 #define UNSTUFF_BITS(resp,start,size)					\
 	({								\
 		const int __size = size;				\
@@ -464,7 +484,9 @@ static int mmc_read_ext_csd(struct mmc_card *card, u8 *ext_csd)
 
 	if (card->ext_csd.rev >= 5) {
 		/* check whether the eMMC card support BKOPS */
-		if (ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x1) {
+		//if (ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x1) {
+		card->ext_csd.bkops_en = 0;                   
+		if (ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x0) {
 			card->ext_csd.bkops = 1;
 			card->ext_csd.bkops_en = ext_csd[EXT_CSD_BKOPS_EN];
 			card->ext_csd.raw_bkops_status =
@@ -658,6 +680,89 @@ static const struct attribute_group *mmc_attr_groups[] = {
 static struct device_type mmc_type = {
 	.groups = mmc_attr_groups,
 };
+
+
+static int msm_emmc_info_read_samsung_proc(
+        char *page, char **start, off_t off, int count, int *eof, void *data)
+{
+    int len = 0;
+    printk("WJP:enter msm_emmc_info_read_samsung_proc \n");
+    strcpy(emmc_module_name,"SAMSUNG KMKJS000VM 4G eMMC");
+    len = sprintf(page, "%s\n", emmc_module_name);
+    return len;   
+}
+
+static int msm_emmc_info_read_hynix_proc(
+        char *page, char **start, off_t off, int count, int *eof, void *data)
+{
+    int len = 0;
+    printk("WJP:enter msm_emmc_info_read_hynix_proc \n");
+    strcpy(emmc_module_name,"HYNIX H9TP32A8JDMCPR 4G eMMC");
+    len = sprintf(page, "%s\n", emmc_module_name);
+    return len;   
+}
+/***********************haoweiwei add meiguang emmc start 20130531 ******************************/
+static int msm_emmc_info_read_micron_proc(
+        char *page, char **start, off_t off, int count, int *eof, void *data)
+{
+    int len = 0;
+    printk("WJP:enter msm_emmc_info_read_micron_proc \n");
+    strcpy(emmc_module_name,"MICRON MT29KZZZ6D4AGLDM 4G eMMC");
+    len = sprintf(page, "%s\n", emmc_module_name);
+    return len;   
+}
+
+static int msm_emmc_info_read_unknown_proc(
+        char *page, char **start, off_t off, int count, int *eof, void *data)
+{
+    int len = 0;
+    printk("WJP:enter msm_emmc_info_read_unknown_proc \n");
+    strcpy(emmc_module_name,"I do not know this eMMC product");
+    len = sprintf(page, "%s\n", emmc_module_name);
+    return len;   
+}
+/**********************haoweiwei add meiguang emmc end 20130531*******************************/
+void init_emmc_info_proc(struct mmc_host *host)
+{
+    printk("WJP:enter init_emmc_info_proc \n");
+
+    d_entry = create_proc_entry("driver/emmc", 0, NULL);
+    
+    if (d_entry) 
+    {
+        if(host->card->cid.manfid == SAMSUNG_EMMC_MANUFACTURER_ID)
+        {
+            d_entry->read_proc = msm_emmc_info_read_samsung_proc;   
+        }
+        else if(host->card->cid.manfid == HYNIX_EMMC_MANUFACTURER_ID)
+        {
+            d_entry->read_proc = msm_emmc_info_read_hynix_proc;
+        }
+	else if(host->card->cid.manfid == MICRON_EMMC_MANUFACTURER_ID)
+        {
+            d_entry->read_proc = msm_emmc_info_read_micron_proc;
+        }
+		else /* default display samsung eMMC, need to be update while use other manfacturer eMMC */
+        {
+            d_entry->read_proc = msm_emmc_info_read_unknown_proc;    //haoweiwei changed
+        }
+        
+        d_entry->data = NULL;
+    }
+    
+    return;
+}
+
+void deinit_emmc_info_proc(void)
+{
+	if (NULL != d_entry) {
+		remove_proc_entry("driver/emmc", NULL);
+		d_entry = NULL;
+	}
+    return;	
+}
+
+
 
 /*
  * Select the PowerClass for the current bus width
@@ -1419,6 +1524,7 @@ static void mmc_detect(struct mmc_host *host)
 static int mmc_suspend(struct mmc_host *host)
 {
 	int err = 0;
+	struct mmc_card *card = host->card;
 
 	BUG_ON(!host);
 	BUG_ON(!host->card);
@@ -1441,9 +1547,14 @@ static int mmc_suspend(struct mmc_host *host)
 		else if (!mmc_host_is_spi(host))
 			mmc_deselect_cards(host);
 	}
+	if (card != NULL && card->cid.manfid == 0x90)
+            ;
+	else
+	{
 	if (!err)
 		host->card->state &=
 			~(MMC_STATE_HIGHSPEED | MMC_STATE_HIGHSPEED_200);
+	}	
 	mmc_release_host(host);
 
 	return err;
@@ -1458,12 +1569,21 @@ static int mmc_suspend(struct mmc_host *host)
 static int mmc_resume(struct mmc_host *host)
 {
 	int err;
+	struct mmc_card *card;
 
 	BUG_ON(!host);
 	BUG_ON(!host->card);
+	card = host->card;
 
 	mmc_claim_host(host);
+	if (card != NULL && card->cid.manfid == 0x90)
+	{
+		err = mmc_card_awake(host);
+	}
+	else
+	{
 	err = mmc_init_card(host, host->ocr, host->card);
+	}	
 	mmc_release_host(host);
 
 	return err;
@@ -1554,6 +1674,9 @@ int mmc_attach_mmc(struct mmc_host *host)
 {
 	int err;
 	u32 ocr;
+    
+    static bool emmc_proc_init = false;
+    
 
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
@@ -1606,6 +1729,13 @@ int mmc_attach_mmc(struct mmc_host *host)
 	err = mmc_init_card(host, host->ocr, NULL);
 	if (err)
 		goto err;
+
+    
+    if(false == emmc_proc_init){
+        init_emmc_info_proc(host);
+        emmc_proc_init = true;
+    }
+    
 
 	mmc_release_host(host);
 	err = mmc_add_card(host->card);

@@ -58,6 +58,14 @@ config RTC_DEBUG
 
 comment "RTC interfaces"
 
+#//maxiaoping 20130325 for MSM8625Q CDMA time sync from MDM side,start.	  
+config ZTE_MDM_TIME_SYNC
+	bool "zte code: fix kernel time sync from modem rtc time"
+	default n
+	help
+	  Say yes here to enable this fix in the RTC kernel driver.
+#//maxiaoping 20130325 for MSM8625Q CDMA time sync from MDM side,end.	
+
 config RTC_INTF_SYSFS
 	boolean "/sys/class/rtc/rtcN (sysfs)"
 	depends on SYSFS

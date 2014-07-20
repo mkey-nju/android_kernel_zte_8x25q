@@ -61,18 +61,22 @@ int mmc_card_sleepawake(struct mmc_host *host, int sleep)
 {
 	struct mmc_command cmd = {0};
 	struct mmc_card *card = host->card;
-	int err;
+	int err =0;
 
 	if (sleep)
 		mmc_deselect_cards(host);
 
+	if (card->cid.manfid == 0x90)
+            ;
+	else
+	{
 	cmd.opcode = MMC_SLEEP_AWAKE;
 	cmd.arg = card->rca << 16;
 	if (sleep)
 		cmd.arg |= 1 << 15;
 
 	cmd.flags = MMC_RSP_R1B | MMC_CMD_AC;
-	err = mmc_wait_for_cmd(host, &cmd, 0);
+	err = mmc_wait_for_cmd(host, &cmd, 5);
 	if (err)
 		return err;
 
@@ -84,6 +88,7 @@ int mmc_card_sleepawake(struct mmc_host *host, int sleep)
 	 */
 	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
 		mmc_delay(DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000));
+	}
 
 	if (!sleep)
 		err = mmc_select_card(card);

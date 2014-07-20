@@ -60,3 +60,14 @@ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
 obj-$(CONFIG_PMIC8058_OTHC)             += pmic8058-othc.o
 obj-$(CONFIG_INPUT_PMIC8058_VIBRA_MEMLESS) += pmic8058-vib-memless.o
 obj-$(CONFIG_BOSCH_BMA150)              += bma150.o
+obj-$(CONFIG_INPUT_LTR502) 		+= ltr502.o
+obj-$(CONFIG_INPUT_LTR558) 		+= ltr558.o
+obj-$(CONFIG_BOSCH_BMA250)		+= bma250.o
+obj-$(CONFIG_AVAGO_APDS990X)            += apds990x.o
+obj-$(CONFIG_INPUT_ISL29028)            += isl29028.o
+obj-$(CONFIG_INPUT_LIS3DH)              += lis3dh.o
+obj-$(CONFIG_SENSORS_TMD2771X)	+= tmd2771x.o
+#[ECID:000000] ZTEBSP wanghaifei start 20120529, compile ALS & proximity driver
+obj-$(CONFIG_INPUT_LIGHTSENSOR_TAOS) += taos.o
+obj-$(CONFIG_INPUT_LIGHTSENSOR_LTR558) += ltr558als.o
+#[ECID:000000] ZTEBSP wanghaifei end 20120529

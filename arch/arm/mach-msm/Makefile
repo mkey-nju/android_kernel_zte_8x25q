@@ -22,6 +22,8 @@ endif
 	endif
 endif
 
+obj-$(CONFIG_MSM_AMSS_ENHANCE_DEBUG) += enhance-debug.o
+
 obj-y += acpuclock.o
 obj-$(CONFIG_ARCH_MSM_KRAIT) += acpuclock-krait.o
 obj-$(CONFIG_ARCH_MSM7X27) += acpuclock-7627.o acpuclock-8625q.o clock-pll.o
@@ -241,12 +243,41 @@ obj-$(CONFIG_TROUT_H2W) += board-trout-h2w.o
 obj-$(CONFIG_TROUT_BATTCHG) += htc_battery.o
 obj-$(CONFIG_TROUT_PWRSINK) += htc_pwrsink.o
 obj-$(CONFIG_ARCH_MSM7X27) += clock-pcom-lookup.o
+#added by fanjiankang for wifi
+obj-$(CONFIG_ARCH_MSM7X27) += board-zte-wifi.o
 obj-$(CONFIG_MACH_MSM7X27_SURF) += board-msm7x27.o devices-msm7x27.o
 obj-$(CONFIG_MACH_MSM7X27_FFA) += board-msm7x27.o devices-msm7x27.o
 obj-$(CONFIG_ARCH_MSM7X27A) += clock-pcom-lookup.o devices-msm7x27a.o
-board-7627a-all-objs += board-msm7627a-storage.o board-msm7627a-bt.o board-msm7627a-camera.o
+#ZTEBSP liwen 20121228 modify for zte project
+#board-7627a-all-objs += board-msm7627a-storage.o board-msm7627a-bt.o board-msm7627a-camera.o
+board-7627a-all-objs += board-msm7627a-storage.o board-msm7627a-bt.o
+
+#//[ECID:0000]ZTE_BSP maxiaoping 20130124 modify for P865F05 basic driver,start.
+ifeq ($(CONFIG_PROJECT_P825F02),y)
+board-7627a-all-objs += board-msm7627a-camera-p825f02.o
+else 
+ifeq ($(CONFIG_PROJECT_P865F04),y)
+board-7627a-all-objs += board-msm7627a-camera-p825f02.o
+else
+ifeq ($(CONFIG_PROJECT_P865F05),y)
+board-7627a-all-objs += board-msm7627a-camera-p825f02.o
+else
+ifeq ($(CONFIG_PROJECT_P825V20),y)
+board-7627a-all-objs += board-msm7627a-camera-p825f02.o
+else 
+ifeq ($(CONFIG_PROJECT_P865G01),y)
+board-7627a-all-objs += board-msm7627a-camera-p865g01.o  #yuxin add for p865g01 2013.01.16
+else
+board-7627a-all-objs += board-msm7627a-camera.o
+endif
+endif
+endif
+endif
+endif
+#//[ECID:0000]ZTE_BSP maxiaoping 20130124 modify for P865F05 basic driver,end.
+
 board-7627a-all-objs += audio-7627a-devices.o
-board-7627a-all-objs += board-msm7627a-display.o board-msm7627a-wlan.o board-msm7627a-io.o
+board-7627a-all-objs += board-msm7627a-display.o board-msm7627a-wlan.o board-msm7627a-io.o board-msm7627a-sensor.o
 obj-$(CONFIG_MACH_MSM7X27A_RUMI3) += board-msm7x27a.o board-7627a-all.o
 obj-$(CONFIG_MACH_MSM7X27A_SURF) += board-msm7x27a.o board-7627a-all.o
 obj-$(CONFIG_MACH_MSM7X27A_FFA) += board-msm7x27a.o board-7627a-all.o
@@ -258,9 +289,8 @@ obj-$(CONFIG_MACH_MSM8625_RUMI3) += board-msm7x27a.o
 obj-$(CONFIG_MACH_MSM8625_SURF) +=  board-msm7x27a.o board-7627a-all.o
 obj-$(CONFIG_MACH_MSM8625_EVB) +=  board-qrd7627a.o board-7627a-all.o
 obj-$(CONFIG_MACH_MSM8625_QRD7) +=  board-qrd7627a.o board-7627a-all.o
-obj-$(CONFIG_MACH_QRD_SKUD_PRIME) +=  board-qrd7627a.o board-7627a-all.o
 obj-$(CONFIG_MACH_MSM8625_FFA) += board-msm7x27a.o board-7627a-all.o
-obj-$(CONFIG_MACH_MSM8625_EVT) += board-msm7x27a.o board-7627a-all.o
+obj-$(CONFIG_MACH_MSM8625_QRD5) +=  board-msm7x27a.o board-7627a-all.o
 obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o memory_topology.o
 obj-$(CONFIG_ARCH_MSM7X30) += clock-local.o clock-7x30.o acpuclock-7x30.o clock-pll.o
 obj-$(CONFIG_MACH_MSM7X25_SURF) += board-msm7x27.o devices-msm7x25.o
@@ -356,6 +386,9 @@ obj-$(CONFIG_ARCH_MSM9625) += gpiomux-v2.o gpiomux.o
 
 
 obj-$(CONFIG_MSM_SLEEP_STATS) += idle_stats.o
+obj-$(CONFIG_MSM_SM_EVENT) += sm_event.o
+obj-$(CONFIG_MSM_SM_EVENT_LOG) += sm_event_log.o sm_event_driver.o
+obj-$(CONFIG_MSM_SLEEP_MONITOR) += sleep_monitor.o
 obj-$(CONFIG_MSM_SLEEP_STATS_DEVICE) += idle_stats_device.o
 obj-$(CONFIG_MSM_DCVS) += msm_dcvs_scm.o msm_dcvs.o msm_dcvs_idle.o
 obj-$(CONFIG_MSM_RUN_QUEUE_STATS) += msm_rq_stats.o
@@ -390,6 +423,6 @@ obj-$(CONFIG_MSM_VP_REGULATOR) += msm_vp.o
 ifdef CONFIG_MSM_CPR
 obj-$(CONFIG_DEBUG_FS) += msm_cpr-debug.o
 endif
+obj-$(CONFIG_MSM_FAST_BOOT) += fastboot.o
 obj-$(CONFIG_MSM_FIQ) += msm7k_fiq.o
 obj-$(CONFIG_MSM_FIQ) += msm7k_fiq_handler.o
-obj-$(CONFIG_MSM_PBUS) += pbus_support.o

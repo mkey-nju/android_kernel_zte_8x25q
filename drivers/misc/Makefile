@@ -57,6 +57,7 @@ obj-$(CONFIG_SENSORS_AK8975)	+= akm8975.o
 obj-$(CONFIG_WL127X_RFKILL)	+= wl127x-rfkill.o
 obj-$(CONFIG_APANIC)		+= apanic.o
 obj-$(CONFIG_SENSORS_AK8975)	+= akm8975.o
+obj-y                          += inv_mpu/
 obj-$(CONFIG_TSIF) += msm_tsif.o
 msm_tsif-objs := tsif.o
 obj-$(CONFIG_TSIF_CHRDEV) += tsif_chrdev.o
@@ -71,3 +72,18 @@ obj-$(CONFIG_MSM_MEMORY_LOW_POWER_MODE_SUSPEND_DEEP_POWER_DOWN) \
 obj-$(CONFIG_PMIC8058_XOADC) += pmic8058-xoadc.o
 obj-$(CONFIG_QSEECOM) += qseecom.o
 obj-$(CONFIG_QFP_FUSE) += qfp_fuse.o
+#[ECID:000000] ZTEBSP wanghaifei start 20120330, add sensor support
+obj-$(CONFIG_MPU_SENSORS_MPU3050)       += inv_mpu/
+obj-$(CONFIG_AKM_SENSORS_AK8962)        += akm/
+obj-$(CONFIG_TI_ST_GYRO_L3G4200D)        += ti-sensor/
+obj-$(CONFIG_TI_ST_COMPASS_AK8963)        += ti-sensor/
+obj-$(CONFIG_TI_ST_ACCEL_LIS3DH)        += ti-sensor/
+obj-$(CONFIG_CAP_PROX_SX9500_ZTE)        += ti-sensor/
+obj-$(CONFIG_SENSORS_ATTINY44A)        += ti-sensor/
+obj-$(CONFIG_ZTE_SENSORS_KXTF9)        += zte-sensor/
+obj-$(CONFIG_ZTE_SENSORS_KIONIX)        += zte-sensor/   
+#[ECID:000000] ZTEBSP wanghaifei end 20120330, add sensor support
+
+#//[ECID:0000] ZTEBSP maxiaoping 20120521 for hardware board id,start
+obj-$(CONFIG_HW_BOARD_ID)	  += zte_hw_board.o
+#//[ECID:0000] ZTEBSP maxiaoping 20120521 for hardware board id,end

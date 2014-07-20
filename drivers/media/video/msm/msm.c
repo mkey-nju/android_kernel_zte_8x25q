@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2013 The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -353,9 +353,9 @@ static int msm_server_control(struct msm_cam_server_dev *server_dev,
 	D("Waiting for config status\n");
 	wait_count = 2;
 	do {
-		rc = wait_event_interruptible_timeout(queue->wait,
-                        !list_empty_careful(&queue->list),
-                        msecs_to_jiffies(out->timeout_ms));
+	rc = wait_event_interruptible_timeout(queue->wait,
+		!list_empty_careful(&queue->list),
+		msecs_to_jiffies(out->timeout_ms));
 		wait_count--;
 		if (rc != -ERESTARTSYS)
 			break;
@@ -628,8 +628,8 @@ static int msm_server_proc_ctrl_cmd(struct msm_cam_v4l2_device *pcam,
 	uptr_cmd = (void __user *)ctrl->value;
 	uptr_value = (void __user *)tmp_cmd->value;
 	value_len = tmp_cmd->length;
-
-	D("%s: cmd type = %d, up1=0x%x, ulen1=%d, up2=0x%x, ulen2=%d\n",
+	if(tmp_cmd->type == 55)
+		printk("%s: cmd type = %d, up1=0x%x, ulen1=%d, up2=0x%x, ulen2=%d\n",
 		__func__, tmp_cmd->type, (uint32_t)uptr_cmd, cmd_len,
 		(uint32_t)uptr_value, tmp_cmd->length);
 
@@ -662,7 +662,7 @@ static int msm_server_proc_ctrl_cmd(struct msm_cam_v4l2_device *pcam,
 	ctrlcmd.length = cmd_len + value_len;
 	ctrlcmd.value = (void *)ctrl_data;
 	if (tmp_cmd->timeout_ms > 0)
-		ctrlcmd.timeout_ms = tmp_cmd->timeout_ms;
+		ctrlcmd.timeout_ms = tmp_cmd->timeout_ms + 500;//ECID:0000 zhangzhao 2012-6-28 avoid toshiba focus failed
 	else
 		ctrlcmd.timeout_ms = 1000;
 	ctrlcmd.vnode_id = pcam->vnode_id;
@@ -2817,7 +2817,11 @@ static int msm_open_config(struct inode *inode, struct file *fp)
 	struct msm_cam_config_dev *config_cam = container_of(inode->i_cdev,
 		struct msm_cam_config_dev, config_cdev);
 	D("%s: open %s\n", __func__, fp->f_path.dentry->d_name.name);
-
+	if (g_server_dev.number_pcam_active.counter < 1 || g_server_dev.pcam_active == NULL) {
+		pr_err("%s: %s opened before camera enable, exit... number_pcam_active = %d\n",
+		__func__, fp->f_path.dentry->d_name.name, g_server_dev.number_pcam_active.counter);
+		return -1;
+	}
 	rc = nonseekable_open(inode, fp);
 	if (rc < 0) {
 		pr_err("%s: nonseekable_open error %d\n", __func__, rc);

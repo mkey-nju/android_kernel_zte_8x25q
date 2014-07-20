@@ -258,6 +258,9 @@ static struct snd_endpoint snd_endpoints_list[] = {
 	SND(TTY_VCO, 9),
 	SND(TTY_HCO, 10),
 	SND(BT, 12),
+	#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+       SND(AUX_MIC_SPEAKER, 14),
+	#endif
 	SND(IN_S_SADC_OUT_HANDSET, 16),
 	SND(IN_S_SADC_OUT_SPEAKER_PHONE, 25),
 	SND(CURRENT, 27),

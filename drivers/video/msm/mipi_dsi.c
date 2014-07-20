@@ -105,6 +105,9 @@ static int mipi_dsi_off(struct platform_device *pdev)
 
 	ret = panel_next_off(pdev);
 
+	MIPI_OUTP(MIPI_DSI_BASE + 0x00A8,0x13);//wangminrong
+	mdelay(1);//wangminrong
+
 #ifdef CONFIG_MSM_BUS_SCALING
 	mdp_bus_scale_update_request(0);
 #endif
@@ -259,6 +262,9 @@ static int mipi_dsi_on(struct platform_device *pdev)
 	else
 		down(&mfd->dma->mutex);
 
+	MIPI_OUTP(MIPI_DSI_BASE + 0x00A8,0x1300);
+	mdelay(1);
+	MIPI_OUTP(MIPI_DSI_BASE + 0x00A8,0);
 	ret = panel_next_on(pdev);
 
 	mipi_dsi_op_mode_config(mipi->mode);

@@ -12,6 +12,11 @@
 
 #include "msm_camera_i2c.h"
 
+#include	<linux/delay.h>
+
+#define	I2C_RETRY_DELAY		5
+#define	I2C_RETRIES		5
+
 int32_t msm_camera_i2c_rxdata(struct msm_camera_i2c_client *dev_client,
 	unsigned char *rxdata, int data_length)
 {
@@ -40,7 +45,8 @@ int32_t msm_camera_i2c_rxdata(struct msm_camera_i2c_client *dev_client,
 int32_t msm_camera_i2c_txdata(struct msm_camera_i2c_client *dev_client,
 				unsigned char *txdata, int length)
 {
-	int32_t rc = 0;
+	int rc = 0;
+	int tries = 0;	
 	uint16_t saddr = dev_client->client->addr >> 1;
 	struct i2c_msg msg[] = {
 		{
@@ -50,11 +56,29 @@ int32_t msm_camera_i2c_txdata(struct msm_camera_i2c_client *dev_client,
 			.buf = txdata,
 		 },
 	};
+
+	do {
+		rc = i2c_transfer(dev_client->client->adapter, msg, 1);
+		if (rc != 1)
+        {
+            printk("WJP %s ,retry %d times rc %d \n", __func__, tries, rc);
+            msleep_interruptible(I2C_RETRY_DELAY);
+        }
+	} while ((rc != 1) && (++tries < I2C_RETRIES));
+
+	if (rc != 1) {
+		dev_err(&dev_client->client->dev, "write transfer error\n");
+		rc = -EIO;
+	} else {
+		rc = 0;
+	}
+	
     //S_I2C_DBG("I2C write, saddr:0x%x, addr:0x%02x%02x, data:0x%02x\r\n",saddr, *txdata, *(txdata+1), *(txdata+2));
-	rc = i2c_transfer(dev_client->client->adapter, msg, 1);
+	/*rc = i2c_transfer(dev_client->client->adapter, msg, 1);
 	if (rc < 0)
-		S_I2C_DBG("msm_camera_i2c_txdata faild 0x%x\n", saddr);
-	return 0;
+		S_I2C_DBG("msm_camera_i2c_txdata faild 0x%x\n", saddr);*/
+	
+	return rc;
 }
 
 int32_t msm_camera_i2c_write(struct msm_camera_i2c_client *client,
@@ -274,8 +298,109 @@ int32_t msm_camera_i2c_write_tbl(struct msm_camera_i2c_client *client,
 {
 	int i;
 	int32_t rc = -EFAULT;
+#ifdef CONFIG_OV5640
+	uint16_t reg_data = 0;
+	int count = 10;	  //ECIO:0000 zhangzhao avoid check failed
+#endif
+
+	
 	for (i = 0; i < size; i++) {
 		enum msm_camera_i2c_data_type dt;
+		
+
+#ifdef CONFIG_OV5640
+
+       S_I2C_DBG("%s: %x \n", __func__,reg_conf_tbl->cmd_type);
+      if (reg_conf_tbl->cmd_type == MSM_CAMERA_I2C_CMD_CHECK)          
+        {
+                  while(count)               
+                  {
+                       rc = msm_camera_i2c_read(client, reg_conf_tbl->reg_addr, &reg_data, 1);
+           	     if (rc < 0)	           
+                       {
+           	              S_I2C_DBG("%s: MSM_CAMERA_I2C_CMD_LOAD read reg 0x%x failed!\n", __func__,reg_conf_tbl->reg_addr);	            
+                                return rc;         
+                       }
+                       S_I2C_DBG("%s: MSM_CAMERA_I2C_CMD_LOAD reg_addr = 0x%x, reg_data =0x%x\n",__func__, reg_conf_tbl->reg_addr, reg_data);
+           	     if (reg_conf_tbl->reg_data == (reg_data & 0x80))	          
+                       {
+           	              S_I2C_DBG("%s: MSM_CAMERA_I2C_CMD_LOAD successed! reg_data = 0x%x\n", __func__, reg_data);
+           	              break;	           
+                       }	          
+               
+           	          msleep(5);
+           	          count--;      
+                  }
+           
+           	 if ((reg_conf_tbl->reg_data != reg_data)&&(!count) )      
+                  {
+           	          S_I2C_DBG("msm_camera_i2c_write_tbl: -------read failed!----B----rc = %d, count =%d\n", rc, count);
+           	          rc = -1;	 
+                  }
+           goto next_ptr;	
+           	//rc = 0;
+          }
+
+
+
+		
+      if (reg_conf_tbl->cmd_type == MSM_CAMERA_I2C_CMD_LOAD)          
+        {
+                  while(count)               
+                  {
+                       rc = msm_camera_i2c_read(client, reg_conf_tbl->reg_addr, &reg_data, 1);
+           	     if (rc < 0)	           
+                       {
+           	              printk("%s: MSM_CAMERA_I2C_CMD_LOAD read reg 0x%x failed!\n", __func__,reg_conf_tbl->reg_addr);	            
+                                return rc;         
+                       }
+                       printk("%s: MSM_CAMERA_I2C_CMD_LOAD reg_addr = 0x%x, reg_data =0x%x\n",__func__, reg_conf_tbl->reg_addr, reg_data);
+           	     if (reg_conf_tbl->reg_data == reg_data)	          
+                       {
+           	              printk("%s: MSM_CAMERA_I2C_CMD_LOAD successed! reg_data = 0x%x\n", __func__, reg_data);
+           	              break;	           
+                       }	          
+               
+           	          msleep(100);
+           	          count--;      
+                  }
+           
+           	 if ((reg_conf_tbl->reg_data != reg_data)&&(!count) )      
+                  {
+           	          printk("msm_camera_i2c_write_tbl: -------read failed!----B----rc = %d, count =%d\n", rc, count);
+           	          rc = -1;	 
+                  }
+           	
+           	//rc = 0;
+          }
+    
+	if (reg_conf_tbl->cmd_type == MSM_CAMERA_I2C_CMD_READ)
+		{
+		    rc = msm_camera_i2c_read(client,reg_conf_tbl->reg_addr, &reg_data, reg_conf_tbl->dt);
+	           if (rc < 0)
+	           {
+		        return rc;
+	           }
+			   
+		    printk("msm_camera_i2c_write_tbl: ---------read:addr = 0x%x, data =  0x%x, len =%d\n", 
+				  reg_conf_tbl->reg_addr, reg_data, reg_conf_tbl->dt);
+
+                  printk("msm_camera_i2c_write_tbl: ------A---addr = 0x%x\n", reg_conf_tbl->reg_data);
+				  
+		    reg_conf_tbl->reg_data = ((reg_conf_tbl->reg_data)|reg_data);
+		    printk("msm_camera_i2c_write_tbl: ------B---addr = 0x%x\n", reg_conf_tbl->reg_data);
+		    rc = msm_camera_i2c_write(
+					client,
+					reg_conf_tbl->reg_addr,
+					reg_conf_tbl->reg_data, reg_conf_tbl->dt);
+			
+		    printk("msm_camera_i2c_write_tbl: ---------write:addr = 0x%x, data =  0x%x, len =%d\n", 
+				  reg_conf_tbl->reg_addr, reg_conf_tbl->reg_data, reg_conf_tbl->dt);
+		}
+		#endif
+		
+
+		
 		if (reg_conf_tbl->cmd_type == MSM_CAMERA_I2C_CMD_POLL) {
 			rc = msm_camera_i2c_poll(client, reg_conf_tbl->reg_addr,
 				reg_conf_tbl->reg_data, reg_conf_tbl->dt);
@@ -332,6 +457,9 @@ int32_t msm_camera_i2c_write_tbl(struct msm_camera_i2c_client *client,
 		}
 		if (rc < 0)
 			break;
+      #ifdef CONFIG_OV5640
+		next_ptr:
+	#endif
 		reg_conf_tbl++;
 	}
 	return rc;

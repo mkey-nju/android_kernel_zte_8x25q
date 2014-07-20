@@ -18,7 +18,7 @@
 #include <linux/reboot.h>
 #include <linux/pm.h>
 #include <linux/regulator/onsemi-ncp6335d.h>
-#include <linux/regulator/fan53555.h>
+//#include <linux/regulator/fan53555.h>
 #include <asm/system_misc.h>
 #include <mach/proc_comm.h>
 
@@ -35,7 +35,7 @@ static void msm_pm_power_off(void)
 
 static void msm_pm_restart(char str, const char *cmd)
 {
-	int rc;
+  int rc;
 
 	pr_debug("The reset reason is %x\n", restart_reason);
 
@@ -43,10 +43,10 @@ static void msm_pm_restart(char str, const char *cmd)
 	if (rc)
 		pr_err("Unable to configure NCP6335D for restart\n");
 
-	rc = fan53555_restart_config();
+/*	rc = fan53555_restart_config();
 	if (rc)
 		pr_err("Unable to configure FAN53555 for restart\n");
-
+*/
 	/* Disable interrupts */
 	local_irq_disable();
 	local_fiq_disable();
@@ -83,7 +83,17 @@ static int msm_reboot_call
 			res = kstrtoul(cmd + 4, 16, &code);
 			code &= 0xff;
 			restart_reason = 0x6f656d00 | code;
-		} else {
+		
+		} else if(!strncmp(cmd, "ftmmode", 7)) {
+			restart_reason = 0x77665504;
+				
+		} 
+		
+		else if(!strncmp(cmd, "rtcalarm", 8)) {
+			restart_reason = 0x77665508;
+		}
+		
+		else {
 			restart_reason = 0x77665501;
 		}
 	}

@@ -269,9 +269,10 @@ EXPORT_SYMBOL_GPL(fat_time_unix2fat);
 int fat_sync_bhs(struct buffer_head **bhs, int nr_bhs)
 {
 	int i, err = 0;
-
+	//It’s an obvious mistake here,the current process will wait until the data be written
+	//So must give these IO request a  higher priority
 	for (i = 0; i < nr_bhs; i++)
-		write_dirty_buffer(bhs[i], WRITE);
+		write_dirty_buffer(bhs[i], WRITE_SYNC);
 
 	for (i = 0; i < nr_bhs; i++) {
 		wait_on_buffer(bhs[i]);

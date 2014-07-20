@@ -1,4 +1,4 @@
-/* Copyright (c) 2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012, The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -12,6 +12,7 @@
  */
 
 #include "msm_sensor.h"
+#include <linux/proc_fs.h>  //wangjianping add sensor  id
 #define SENSOR_NAME "ov7692"
 
 DEFINE_MUTEX(ov7692_mut);
@@ -55,8 +56,17 @@ static struct msm_camera_i2c_reg_conf ov7692_recommend_settings[] = {
 	{0xff, 0x00},
 	{0x67, 0x20},
 	{0x81, 0x3f},
+    {0xcc, 0x02},
+    {0xcd, 0x80},
+    {0xce, 0x01},
+    {0xcf, 0xe0},
+    {0xc8, 0x02},
+    {0xc9, 0x80},
+    {0xca, 0x01},
+    {0xcb, 0xe0},
 	{0xd0, 0x48},
 	{0x82, 0x03},
+    {0x0e, 0x00},
 	{0x70, 0x00},
 	{0x71, 0x34},
 	{0x74, 0x28},
@@ -74,70 +84,95 @@ static struct msm_camera_i2c_reg_conf ov7692_recommend_settings[] = {
 	{0x50, 0x9a},
 	{0x51, 0x80},
 	{0x4c, 0x7d},
+    {0x0e, 0x00},    
+    {0x5a, 0x1f},
+    {0x5b, 0x9f},
+    {0x5c, 0x6a},
+    {0x5d, 0x42},    
+    {0x80, 0x7F},  //control        
 	{0x85, 0x10},
-	{0x86, 0x00},
-	{0x87, 0x00},
-	{0x88, 0x00},
+    {0x86, 0x10},  //radius         
+    {0x87, 0x10},  //X              
+    {0x88, 0x80},  //Y              
 	{0x89, 0x2a},
-	{0x8a, 0x26},
-	{0x8b, 0x22},
-	{0xbb, 0x7a},
-	{0xbc, 0x69},
-	{0xbd, 0x11},
-	{0xbe, 0x13},
-	{0xbf, 0x81},
-	{0xc0, 0x96},
-	{0xc1, 0x1e},
-	{0xb7, 0x05},
-	{0xb8, 0x09},
-	{0xb9, 0x00},
-	{0xba, 0x18},
-	{0x5a, 0x1f},
-	{0x5b, 0x9f},
-	{0x5c, 0x6a},
-	{0x5d, 0x42},
-	{0x24, 0x78},
-	{0x25, 0x68},
-	{0x26, 0xb3},
-	{0xa3, 0x0b},
-	{0xa4, 0x15},
-	{0xa5, 0x2a},
-	{0xa6, 0x51},
-	{0xa7, 0x63},
-	{0xa8, 0x74},
-	{0xa9, 0x83},
-	{0xaa, 0x91},
-	{0xab, 0x9e},
-	{0xac, 0xaa},
-	{0xad, 0xbe},
-	{0xae, 0xce},
-	{0xaf, 0xe5},
-	{0xb0, 0xf3},
-	{0xb1, 0xfb},
-	{0xb2, 0x06},
-	{0x8c, 0x5c},
-	{0x8d, 0x11},
-	{0x8e, 0x12},
-	{0x8f, 0x19},
-	{0x90, 0x50},
-	{0x91, 0x20},
-	{0x92, 0x96},
-	{0x93, 0x80},
-	{0x94, 0x13},
-	{0x95, 0x1b},
-	{0x96, 0xff},
-	{0x97, 0x00},
-	{0x98, 0x3d},
-	{0x99, 0x36},
-	{0x9a, 0x51},
-	{0x9b, 0x43},
-	{0x9c, 0xf0},
-	{0x9d, 0xf0},
-	{0x9e, 0xf0},
-	{0x9f, 0xff},
-	{0xa0, 0x68},
-	{0xa1, 0x62},
-	{0xa2, 0x0e},
+    {0x8a, 0x25},  //G              
+    {0x8b, 0x25},  //B              
+    {0xbb, 0xac}, //D7              
+    {0xbc, 0xae}, //DA              
+    {0xbd, 0x02}, //03              
+    {0xbe, 0x1f}, //27              
+    {0xbf, 0x93}, //B8              
+    {0xc0, 0xb1}, //DE              
+    {0xc1, 0x1A},                  
+    {0xb4, 0x06},                  
+    {0xb5, 0x05}, //auto, no meaning
+    {0xb6, 0x00}, //auto, no meaning
+    {0xb7, 0x00},                  
+    {0xb8, 0x06},                  
+    {0xb9, 0x02},                  
+    {0xba, 0x78},                  
+     //====AEC/AGC target====;;
+	
+    {0x00, 0x40},     //manual gain               
+    {0x10, 0x80},     //manual exposure
+    {0x13, 0xf7},
+    {0x24, 0x88},  
+    {0x25, 0x78},  //0x80                
+    {0x26, 0xB5},                  
+    //=====UV adjust======;;  
+    //{0x81, 0xff},   
+    {0x81, 0x3f}, 
+    {0x5A, 0x10},                  
+    {0x5B, 0xA1},                  
+    {0x5C, 0x3A},                  
+    {0x5d, 0x20},                  
+    //====Gamma====;;         
+
+    {0xa3, 0x10},                  
+    {0xa4, 0x1c},                  
+    {0xa5, 0x30},                  
+    {0xa6, 0x58},                  
+    {0xa7, 0x68},                  
+    {0xa8, 0x76},                  
+    {0xa9, 0x81},                  
+    {0xaa, 0x8a},                  
+    {0xab, 0x92},                  
+    {0xac, 0x98},                  
+    {0xad, 0xa4},                  
+    {0xae, 0xb1},                  
+    {0xaf, 0xc5},                  
+    {0xb0, 0xd7},                  
+    {0xb1, 0xe8},                  
+    {0xb2, 0x20},   
+    //==Advance==;;           
+    {0x8c, 0x52},                  
+    {0x8d, 0x11},                  
+    {0x8e, 0x12},                  
+    {0x8f, 0x19},                  
+    {0x90, 0x50},                  
+    {0x91, 0x20},                  
+    {0x92, 0xb1},                  
+    {0x93, 0x9a},                  
+    {0x94, 0x0c},                   
+    {0x95, 0x0c},                   
+    {0x96, 0xf0},                  
+    {0x97, 0x10},                  
+    {0x98, 0x61},                  
+    {0x99, 0x63},                  
+    {0x9a, 0x71},                  
+    {0x9b, 0x78},                  
+    {0x9c, 0xf0},                  
+    {0x9d, 0xf0},                  
+    {0x9e, 0xf0},                  
+    {0x9f, 0xff},                  
+    {0xa0, 0xa7},                  
+    {0xa1, 0xb0},                  
+    {0xa2, 0x0f}, 
+    {0x31, 0x83}, //0x87 for 15fps ; 0x83 for 30fps
+    {0xd2, 0x07},  //enable saturation       
+    {0xd8, 0x50}, //saturation                 
+    {0xd9, 0x50},
+    {0x15, 0xa8},
 };
 
 static struct msm_camera_i2c_reg_conf ov7692_full_settings[] = {
@@ -421,6 +456,40 @@ static struct msm_camera_i2c_enum_conf_array ov7692_exposure_enum_confs = {
 	.data_type = MSM_CAMERA_I2C_BYTE_DATA,
 };
 
+static struct msm_camera_i2c_reg_conf ov7692_brightness[][2] = {
+	{  {0xd3, 0x48},{0xdc, 0x09},}, /*EXPOSURECOMPENSATIONN2*/
+	{  {0xd3, 0x28},{0xdc, 0x09},}, /*EXPOSURECOMPENSATIONN2*/
+	{  {0xd3, 0x10},{0xdc, 0x01},}, /*EXPOSURECOMPENSATIONN2*/
+	{  {0xd3, 0x20},{0xdc, 0x01},}, /*EXPOSURECOMPENSATIONN2*/
+	{  {0xd3, 0x40},{0xdc, 0x01},}, /*EXPOSURECOMPENSATIONN2*/
+};
+static struct msm_camera_i2c_conf_array ov7692_brightness_confs[][1] = {
+	{{ov7692_brightness[0], ARRAY_SIZE(ov7692_brightness[0]), 0,
+		MSM_CAMERA_I2C_SET_BYTE_WRITE_MASK_DATA},},
+	{{ov7692_brightness[1], ARRAY_SIZE(ov7692_brightness[1]), 0,
+		MSM_CAMERA_I2C_SET_BYTE_WRITE_MASK_DATA},},
+	{{ov7692_brightness[2], ARRAY_SIZE(ov7692_brightness[2]), 0,
+		MSM_CAMERA_I2C_SET_BYTE_WRITE_MASK_DATA},},
+	{{ov7692_brightness[3], ARRAY_SIZE(ov7692_brightness[3]), 0,
+		MSM_CAMERA_I2C_SET_BYTE_WRITE_MASK_DATA},},
+	{{ov7692_brightness[4], ARRAY_SIZE(ov7692_brightness[4]), 0,
+		MSM_CAMERA_I2C_SET_BYTE_WRITE_MASK_DATA},},
+};
+static int ov7692_brightness_enum_map[] = {
+	CAMERA_BRIGHTNESS_LV0,
+	CAMERA_BRIGHTNESS_LV1,
+	CAMERA_BRIGHTNESS_LV2,
+	CAMERA_BRIGHTNESS_LV3,
+	CAMERA_BRIGHTNESS_LV4,	
+};
+static struct msm_camera_i2c_enum_conf_array ov7692_brightness_enum_confs = {
+	.conf = &ov7692_brightness_confs[0][0],
+	.conf_enum = ov7692_brightness_enum_map,
+	.num_enum = ARRAY_SIZE(ov7692_brightness_enum_map),
+	.num_index = ARRAY_SIZE(ov7692_brightness_confs),
+	.num_conf = ARRAY_SIZE(ov7692_brightness_confs[0]),
+	.data_type = MSM_CAMERA_I2C_BYTE_DATA,
+};
 static struct msm_camera_i2c_reg_conf ov7692_iso[][1] = {
 	{{0x14, 0x20, 0x00, 0x00, 0x8F},},   /*ISO_AUTO*/
 	{{0x14, 0x20, 0x00, 0x00, 0x8F},},   /*ISO_DEBLUR*/
@@ -818,6 +887,14 @@ struct msm_sensor_v4l2_ctrl_info_t ov7692_v4l2_ctrl_info[] = {
 		.enum_cfg_settings = &ov7692_wb_oem_enum_confs,
 		.s_v4l2_ctrl = ov7692_msm_sensor_s_ctrl_by_enum,
 	},
+	{
+		.ctrl_id = V4L2_CID_BRIGHTNESS,
+		.min = CAMERA_BRIGHTNESS_LV0,
+		.max = CAMERA_BRIGHTNESS_LV4,
+		.step = 1,
+		.enum_cfg_settings = &ov7692_brightness_enum_confs,
+		.s_v4l2_ctrl = ov7692_msm_sensor_s_ctrl_by_enum,
+	},
 
 };
 
@@ -850,6 +927,43 @@ static const struct i2c_device_id ov7692_i2c_id[] = {
 	{ }
 };
 
+
+static ssize_t camera_id_read_proc(char *page,char **start,off_t off,int count,int *eof,void* data)
+{		 	
+    int ret;
+	
+    unsigned char *camera_status = "BACK Camera ID:OV7692-0.3M";	
+    ret = strlen(camera_status);	 	 
+    sprintf(page,"%s\n",camera_status);	 	 
+    return (ret + 1);	
+}
+static void camera_proc_file(void)
+{	
+    struct proc_dir_entry *proc_file  = create_proc_entry("driver/camera_id_front",0644,NULL);	
+    if(proc_file)	
+     {		
+  	     proc_file->read_proc = camera_id_read_proc;			
+     }	
+    else	
+     {		
+        printk(KERN_INFO "camera_proc_file error!\r\n");	
+     }
+}
+
+
+
+static int32_t ov7692_sensor_i2c_probe(struct i2c_client *client,
+	const struct i2c_device_id *id)
+{
+	int rc = 0;
+	rc = msm_sensor_i2c_probe(client,id);
+	
+    if(rc == 0)
+    {
+        camera_proc_file();
+    }
+	return rc;
+}
 
 static struct i2c_driver ov7692_i2c_driver = {
 	.id_table = ov7692_i2c_id,

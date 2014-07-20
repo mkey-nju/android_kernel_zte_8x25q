@@ -215,6 +215,17 @@ config REGULATOR_ONSEMI_NCP6335D
 	 and supports a programmable voltage range from 0.6V to 1.4V in steps
 	 of 6.25mV.
 
+#ZTEBSP  20130425 add qualcomm patch for MP8845C start
+#config REGULATOR_MPS_MP8845C
+#	tristate "MPS MP8845C regulator support"
+#	depends on I2C
+#	help
+#	 This driver supports the MPS MP8845C switching voltage regulator
+#	 (buck convertor). The regulator is controlled using an I2C interface
+#	 and supports a programmable voltage range from 0.6V to 1.45V in steps
+#	 of 6.69mV.	 
+#ZTEBSP  20130425 add qualcomm patch for MP8845C end
+	
 config REGULATOR_PCAP
 	tristate "Motorola PCAP2 regulator driver"
 	depends on EZX_PCAP

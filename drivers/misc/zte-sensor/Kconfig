@@ -1,0 +1,21 @@
+#
+# TI's shared transport line discipline and the protocol
+# drivers (BT, FM and GPS)
+#
+menu "Texas Gyro and Accel sensor"
+ config ZTE_SENSORS_KXTF9
+ 	tristate "kxtf9 accel support"
+	depends on I2C
+	select INPUT_POLLDEV
+	help
+	  If you say yes here you get support for kxtf9 accel sensor
+	  
+# added by yangze 20120919	  
+ config ZTE_SENSORS_KIONIX
+ 	tristate "kionix accel support"
+	depends on I2C
+	select INPUT_POLLDEV
+	help
+	  If you say yes here you get support for kionix accel sensor
+	  	  
+endmenu

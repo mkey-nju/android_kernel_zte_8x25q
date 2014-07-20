@@ -53,6 +53,13 @@
 #include "smd_rpc_sym.h"
 #include "smd_private.h"
 
+#ifdef CONFIG_MSM_SM_EVENT
+  #include <linux/sm_event_log.h>
+  #include <linux/sm_event.h>
+#endif
+
+#define ZTE_NO_RPC_REBOOT_NOTIFIER
+
 enum {
 	SMEM_LOG = 1U << 0,
 	RTR_DBG = 1U << 1,
@@ -159,7 +166,11 @@ static atomic_t pm_mid = ATOMIC_INIT(1);
 static void do_read_data(struct work_struct *work);
 static void do_create_pdevs(struct work_struct *work);
 static void do_create_rpcrouter_pdev(struct work_struct *work);
+
+#ifndef ZTE_NO_RPC_REBOOT_NOTIFIER
 static int msm_rpcrouter_close(void);
+#endif
+
 
 static DECLARE_WORK(work_create_pdevs, do_create_pdevs);
 static DECLARE_WORK(work_create_rpcrouter_pdev, do_create_rpcrouter_pdev);
@@ -215,6 +226,8 @@ static DEFINE_MUTEX(xprt_info_list_lock);
 DECLARE_COMPLETION(rpc_remote_router_up);
 static atomic_t pending_close_count = ATOMIC_INIT(0);
 
+
+#ifndef ZTE_NO_RPC_REBOOT_NOTIFIER
 static int msm_rpc_reboot_call(struct notifier_block *this,
 			unsigned long code, void *_cmd)
 {
@@ -232,6 +245,8 @@ static struct notifier_block msm_rpc_reboot_notifier = {
 	.notifier_call = msm_rpc_reboot_call,
 	.priority = 100
 };
+#endif
+
 
 /*
  * Search for transport (xprt) that matches the provided PID.
@@ -1567,6 +1582,9 @@ int msm_rpc_write(struct msm_rpc_endpoint *ept, void *buffer, int count)
 	int first_pkt = 1;
 	uint32_t mid;
 	unsigned long flags;
+#ifdef CONFIG_MSM_SM_EVENT
+	sm_msm_rpc_data_t tmp;
+#endif
 
 	/* snoop the RPC packet and enforce permissions */
 
@@ -1665,6 +1683,31 @@ int msm_rpc_write(struct msm_rpc_endpoint *ept, void *buffer, int count)
 	}
 
  write_release_lock:
+#ifdef CONFIG_MSM_SM_EVENT
+	//RPC CALL
+	if (rq->type == 0) {
+		tmp.prog = ept->dst_prog;
+		tmp.version = ept->dst_vers;
+		tmp.type = hdr.type;
+		tmp.src_pid = hdr.src_pid;
+		tmp.src_cid = hdr.src_cid;
+		tmp.confirm_rx = hdr.confirm_rx;
+		tmp.size = hdr.size;
+		tmp.dst_pid = hdr.dst_pid;
+		tmp.dst_cid = hdr.dst_cid;
+		sm_add_event(SM_RPCROUTER_EVENT | RPCROUTER_WRITE_CALL, count, 0, (void*)&tmp, sizeof(tmp));
+	} else {
+		tmp.dst_pid = hdr.dst_pid;
+		tmp.type = hdr.type;
+		tmp.src_pid = hdr.src_pid;
+		tmp.src_cid = hdr.src_cid;
+		tmp.confirm_rx = hdr.confirm_rx;
+		tmp.size = hdr.size;
+		tmp.dst_cid = hdr.dst_cid;
+		sm_add_event(SM_RPCROUTER_EVENT | RPCROUTER_WRITE_REPLY, count, 0, (void*)&tmp, sizeof(tmp));
+	}
+#endif
+
 	/* if reply, release wakelock after writing to the transport */
 	if (rq->type != 0) {
 		/* Upon failure, add reply tag to the pending list.
@@ -1827,6 +1870,9 @@ int __msm_rpc_read(struct msm_rpc_endpoint *ept,
 	struct msm_rpc_reply *reply;
 	unsigned long flags;
 	int rc;
+#ifdef CONFIG_MSM_SM_EVENT
+	sm_msm_rpc_data_t tmp;
+#endif
 
 	rc = wait_for_restart_and_notify(ept);
 	if (rc)
@@ -1898,6 +1944,32 @@ int __msm_rpc_read(struct msm_rpc_endpoint *ept,
 
 	*frag_ret = pkt->first;
 	rq = (void*) pkt->first->data;
+#ifdef CONFIG_MSM_SM_EVENT
+
+	//RPC CALL
+	if (rq->type == 0) {
+		tmp.prog = rq->prog;
+		tmp.version = rq->vers;
+		tmp.type = pkt->hdr.type;
+		tmp.src_pid = pkt->hdr.src_pid;
+		tmp.src_cid = pkt->hdr.src_cid;
+		tmp.confirm_rx = pkt->hdr.confirm_rx;
+		tmp.size = pkt->hdr.size;
+		tmp.dst_pid = pkt->hdr.dst_pid;
+		tmp.dst_cid = pkt->hdr.dst_cid;
+		sm_add_event(SM_RPCROUTER_EVENT | RPCROUTER_READ_CALL , rc, 0, (void*)&tmp, sizeof(tmp));
+	} else {
+		tmp.type = pkt->hdr.type;
+		tmp.src_pid = pkt->hdr.src_pid;
+		tmp.src_cid = pkt->hdr.src_cid;
+		tmp.confirm_rx = pkt->hdr.confirm_rx;
+		tmp.size = pkt->hdr.size;
+		tmp.dst_pid = pkt->hdr.dst_pid;
+		tmp.dst_cid = pkt->hdr.dst_cid;
+		sm_add_event(SM_RPCROUTER_EVENT | RPCROUTER_READ_REPLY, rc, 0, (void*)&tmp, sizeof(tmp));
+	}
+#endif
+
 	if ((rc >= (sizeof(uint32_t) * 3)) && (rq->type == 0)) {
 		/* RPC CALL */
 		reply = get_avail_reply(ept);
@@ -2146,6 +2218,7 @@ int msm_rpc_get_curr_pkt_size(struct msm_rpc_endpoint *ept)
 	return rc;
 }
 
+#ifndef ZTE_NO_RPC_REBOOT_NOTIFIER
 static int msm_rpcrouter_close(void)
 {
 	struct rpcrouter_xprt_info *xprt_info;
@@ -2173,6 +2246,8 @@ static int msm_rpcrouter_close(void)
 	mutex_unlock(&xprt_info_list_lock);
 	return 0;
 }
+#endif
+
 
 #if defined(CONFIG_DEBUG_FS)
 static int dump_servers(char *buf, int max)
@@ -2530,9 +2605,13 @@ static int __init rpcrouter_init(void)
 	msm_rpc_connect_timeout_ms = 0;
 	smd_rpcrouter_debug_mask |= SMEM_LOG;
 	debugfs_init();
+	
+	#ifndef ZTE_NO_RPC_REBOOT_NOTIFIER
 	ret = register_reboot_notifier(&msm_rpc_reboot_notifier);
 	if (ret)
 		pr_err("%s: Failed to register reboot notifier", __func__);
+	#endif
+	
 
 	/* Initialize what we need to start processing */
 	rpcrouter_workqueue =

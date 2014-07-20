@@ -1,4 +1,5 @@
-/* Copyright (c) 2008-2012, The Linux Foundation. All rights reserved.
+ /*
+ * Copyright (c) 2012, The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -39,6 +40,10 @@
 #endif
 #include "diag_dci.h"
 
+//chengzhaoguang20131212 add sstl lock
+#ifndef CONFIG_ZTE_FEATURE_DIAG_LOCK_WHOLE
+#endif
+
 #define MODE_CMD		41
 #define RESET_ID		2
 #define ALL_EQUIP_ID		100
@@ -64,6 +69,9 @@ struct mask_info {
 do {									\
 	*(int *)(msg_mask_tbl_ptr) = MSG_SSID_ ## XX;			\
 	msg_mask_tbl_ptr += 4;						\
+	*(int *)(msg_mask_tbl_ptr) = MSG_SSID_ ## XX ## _LAST;		\
+	msg_mask_tbl_ptr += 4;						\
+	/* mimic the last entry as actual_last while creation */	\
 	*(int *)(msg_mask_tbl_ptr) = MSG_SSID_ ## XX ## _LAST;		\
 	msg_mask_tbl_ptr += 4;						\
 	/* mimic the last entry as actual_last while creation */	\
@@ -986,6 +994,14 @@ static int diag_process_apps_pkt(unsigned char *buf, int len)
 #if defined(CONFIG_DIAG_OVER_USB)
 	int payload_length;
 	unsigned char *ptr;
+#endif
+
+//chengzhaoguang20131212 add sstl lock
+#ifdef CONFIG_ZTE_FEATURE_DIAG_LOCK_WHOLE
+        driver->apps_rsp_buf[0] = 0x13;
+        (void)memcpy(&(driver->apps_rsp_buf[1]), temp, len);
+        ENCODE_RSP_AND_SEND(len + 1);
+        return 0;
 #endif
 
 	/* Set log masks */

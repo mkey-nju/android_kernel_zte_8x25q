@@ -56,6 +56,9 @@ static struct snd_ctxt the_snd;
 #define SND_SET_VOLUME_PROC 3
 #define SND_AVC_CTL_PROC 29
 #define SND_AGC_CTL_PROC 30
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+  #define SND_AUDIO_LOOPBACK_PROC 52
+#endif
 
 struct rpc_snd_set_device_args {
 	uint32_t device;
@@ -87,6 +90,13 @@ struct rpc_snd_agc_ctl_args {
 	uint32_t client_data;
 };
 
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+struct rpc_snd_lb_ctl_args {
+	uint32_t lb_ctl;
+	uint32_t cb_func;
+	uint32_t client_data;
+};
+#endif
 struct snd_set_device_msg {
 	struct rpc_request_hdr hdr;
 	struct rpc_snd_set_device_args args;
@@ -107,6 +117,12 @@ struct snd_agc_ctl_msg {
 	struct rpc_snd_agc_ctl_args args;
 };
 
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+struct snd_set_lb_msg {
+	struct rpc_request_hdr hdr;
+	struct rpc_snd_lb_ctl_args args;
+};
+#endif
 struct snd_endpoint *get_snd_endpoints(int *size);
 
 static inline int check_mute(int mute)
@@ -150,14 +166,18 @@ static long snd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct snd_set_volume_msg vmsg;
 	struct snd_avc_ctl_msg avc_msg;
 	struct snd_agc_ctl_msg agc_msg;
-
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+	struct snd_set_lb_msg lb_msg;
+#endif
 	struct msm_snd_device_config dev;
 	struct msm_snd_volume_config vol;
 	struct snd_ctxt *snd = file->private_data;
 	int rc = 0;
 
 	uint32_t avc, agc;
-
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+	uint32_t set_lb;
+#endif
 	mutex_lock(&snd->lock);
 	switch (cmd) {
 	case SND_SET_DEVICE:
@@ -265,6 +285,28 @@ static long snd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		rc = get_endpoint(snd, arg);
 		break;
 
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+	case SND_SET_AUDIO_LOOPBACK:
+		if (get_user(set_lb, (uint32_t __user *) arg)) {
+			rc = -EFAULT;
+			break;
+		} else if ((set_lb != 1) && (set_lb != 0)) {
+			rc = -EINVAL;
+			break;
+		}
+
+		lb_msg.args.lb_ctl = cpu_to_be32(set_lb);
+
+		lb_msg.args.cb_func = -1;
+		lb_msg.args.client_data = 0;
+
+		pr_info("snd_lb_ctl %d\n", set_lb);
+
+		rc = msm_rpc_call(snd->ept,
+			SND_AUDIO_LOOPBACK_PROC,
+			&lb_msg, sizeof(lb_msg), 5 * HZ);
+		break;
+#endif
 	default:
 		MM_ERR("unknown command\n");
 		rc = -EINVAL;

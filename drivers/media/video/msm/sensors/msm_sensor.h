@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2012, The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -25,6 +25,7 @@
 #include <linux/uaccess.h>
 #include <mach/camera.h>
 #include <mach/gpio.h>
+#include <asm/gpio.h> //wanghaifei for JB
 #include <media/msm_camera.h>
 #include <media/v4l2-subdev.h>
 #include "msm_camera_i2c.h"
@@ -64,6 +65,7 @@ struct msm_sensor_output_reg_addr_t {
 struct msm_sensor_id_info_t {
 	uint16_t sensor_id_reg_addr;
 	uint16_t sensor_id;
+	struct msm_camera_i2c_conf_array *sensor_id_reg_addr_ext;/*zhangzhao add for 5ca*/
 };
 
 struct msm_sensor_exp_gain_info_t {
@@ -86,6 +88,13 @@ struct msm_sensor_reg_t {
 	uint8_t init_size;
 	struct msm_camera_i2c_conf_array *mode_settings;
 	struct msm_camera_i2c_conf_array *no_effect_settings;
+	
+	#ifdef CONFIG_OV5640
+	struct msm_camera_i2c_conf_array *fw_download;
+	int fw_size;
+	#endif
+	
+	
 	struct msm_sensor_output_info_t *output_settings;
 	uint8_t num_conf;
 };
@@ -144,6 +153,19 @@ struct msm_sensor_fn_t {
 		int32_t *);
 	int32_t (*sensor_pip_set_mode)(struct msm_sensor_ctrl_t *,
 		int32_t);
+    int32_t (*sensor_set_af_rect)(struct msm_sensor_ctrl_t *,
+        struct msm_sensor_af_rect_data *);
+
+    int32_t (*sensor_flash_auto_state)(struct msm_sensor_ctrl_t *, uint8_t *);
+    
+	/*ECID:0000 2012-6-18 zhangzhao optimize the camera focus start*/
+       int (*sensor_set_af_result)
+              (struct msm_sensor_ctrl_t *s_ctrl);
+	int32_t (*sensor_download_af_firmware)
+		(struct msm_sensor_ctrl_t *s_ctrl);
+	/*ECID:0000 2012-6-18 zhangzhao optimize the camera focus end*/
+	
+
 };
 
 struct msm_sensor_csi_info {
@@ -266,6 +288,9 @@ int32_t msm_sensor_get_csi_params(struct msm_sensor_ctrl_t *s_ctrl,
 
 struct msm_sensor_ctrl_t *get_sctrl(struct v4l2_subdev *sd);
 
+#ifdef CONFIG_S5K3H2_SUNNY_Q8S02E
+extern int lcd_camera_power_l5_onoff(int on);
+#endif
 #define VIDIOC_MSM_SENSOR_CFG \
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 10, void __user *)
 

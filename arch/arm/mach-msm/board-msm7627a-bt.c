@@ -25,6 +25,13 @@
 #include "board-msm7627a.h"
 #include "devices-msm7x2xa.h"
 
+#include <linux/proc_fs.h>
+static struct proc_dir_entry * d_entry;
+static char  module_name[50]={"0"};
+void init_bt_proc(void);
+void deinit_bt_proc(void);
+static int msm_bt_read_proc(char *page, char **start, off_t off, int count, int *eof, void *data);
+
 #if defined(CONFIG_BT) && defined(CONFIG_MARIMBA_CORE)
 
 
@@ -103,13 +110,12 @@ static void gpio_bt_config(void)
 	if (machine_is_msm7627a_qrd1())
 		gpio_bt_sys_rest_en = 114;
 	if (machine_is_msm7627a_evb() || machine_is_msm8625_evb()
-				|| machine_is_msm8625_evt())
+				|| machine_is_msm8625_qrd5() || machine_is_msm7x27a_qrd5a())
 		gpio_bt_sys_rest_en = 16;
+	if(machine_is_msm8625q_skud() || machine_is_msm8625q_skue() || machine_is_msm8625q_evbd())
+		gpio_bt_sys_rest_en = 35;
 	if (machine_is_msm8625_qrd7())
 		gpio_bt_sys_rest_en = 88;
-	if (machine_is_qrd_skud_prime() || machine_is_msm8625q_evbd()
-				|| machine_is_msm8625q_skud())
-		gpio_bt_sys_rest_en = 35;
 	if (machine_is_msm7627a_qrd3()) {
 		if (socinfo == 0x70002)
 			gpio_bt_sys_rest_en = 88;
@@ -660,6 +666,10 @@ static int bluetooth_switch_regulators(int on)
 			goto reg_disable;
 		}
 
+		dev_info(&msm_bt_power_device.dev,
+				"%s: regulator_get_voltage of %s is %d\n",
+				__func__, bt_vregs[i].name, regulator_get_voltage(bt_vregs[i].reg));
+
 		if (bt_vregs[i].is_pin_controlled) {
 			rc = pmapp_vreg_lpm_pincntrl_vote(id,
 				bt_vregs[i].pmapp_id,
@@ -687,7 +697,7 @@ pin_cnt_fail:
 	if (on)
 		regulator_disable(bt_vregs[i].reg);
 reg_disable:
-	if (on) {
+		if (on) {
 		while (i) {
 			i--;
 			regulator_disable(bt_vregs[i].reg);
@@ -982,11 +992,42 @@ static struct i2c_board_info bahama_devices[] = {
 	.platform_data = &marimba_pdata,
 },
 };
+static int msm_bt_read_proc(
+        char *page, char **start, off_t off, int count, int *eof, void *data)
+{
+	 int len = 0;
+    printk("[ZGC]:msm_bt_read_proc\n");
+    strcpy(module_name,"BT_Info = BT Information:Qualcomm;    Model Number:WCN2243");
+    len = sprintf(page, "%s\n",module_name);
+	 return len;
+ }   
+    
+void  init_bt_proc(void)
+{
+       printk("[ZGC]:init_bt_proc\n");
+	d_entry = create_proc_entry("driver/bt_id",
+				    0, NULL);
+        if (d_entry) {
+                d_entry->read_proc = msm_bt_read_proc;
+                
+                d_entry->data = NULL;
+        }
 
+}
+
+void deinit_bt_proc(void)
+{
+        printk("[ZGC]:deinit_bt_proc\n");
+	if (NULL != d_entry) {
+		remove_proc_entry("msm_bt", NULL);
+		d_entry = NULL;
+	}
+}
 void __init msm7627a_bt_power_init(void)
 {
 	int i, rc = 0;
 	struct device *dev;
+
 
 	gpio_bt_config();
 
@@ -1014,10 +1055,21 @@ void __init msm7627a_bt_power_init(void)
 					__func__, bt_vregs[i].name, rc);
 			goto reg_get_fail;
 		}
+		if(!strcmp(bt_vregs[i].name, "bt")
+			&& ( machine_is_msm7627a_evb()
+				|| machine_is_msm8625_evb()
+				|| machine_is_msm8625_qrd5()
+				|| machine_is_msm8625q_skud()
+				|| machine_is_msm8625q_skue()
+				|| machine_is_msm8625_qrd7())) {
+			bt_vregs[i].min_level = 3300000;
+			dev_info(dev, "%s: set regulator %s min level to %d\n",
+					__func__, bt_vregs[i].name, bt_vregs[i].min_level);
+		}
 	}
 
 	dev->platform_data = &bluetooth_power;
-
+     init_bt_proc();
 	return;
 
 reg_get_fail:

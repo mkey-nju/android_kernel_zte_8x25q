@@ -1,4 +1,4 @@
-/* Copyright (c) 2009-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2009-2012, Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -677,8 +677,6 @@ static void qup_i2c_recover_bus_busy(struct qup_i2c_dev *dev)
 	uint32_t status = readl_relaxed(dev->base + QUP_I2C_STATUS);
 	struct gpiomux_setting old_gpio_setting;
 
-	if (dev->pdata->msm_i2c_config_gpio)
-		return;
 
 	if (!(status & (I2C_STATUS_BUS_ACTIVE)) ||
 		(status & (I2C_STATUS_BUS_MASTER)))
@@ -1236,9 +1234,12 @@ blsp_core_init:
 		dev->i2c_gpios[i] = res ? res->start : -1;
 	}
 
-	ret = qup_i2c_request_gpios(dev);
-	if (ret)
-		goto err_request_gpio_failed;
+	/* Request gpio only when custom gpio configuration function is NOT defined*/
+	if(!pdata->msm_i2c_config_gpio){
+		ret = qup_i2c_request_gpios(dev);
+		if (ret)
+			goto err_request_gpio_failed;
+	}
 
 	platform_set_drvdata(pdev, dev);
 
@@ -1470,10 +1471,15 @@ static int i2c_qup_runtime_resume(struct device *dev)
 #endif
 
 static const struct dev_pm_ops i2c_qup_dev_pm_ops = {
+#if 0
 	SET_SYSTEM_SLEEP_PM_OPS(
 		qup_i2c_suspend,
 		qup_i2c_resume
 	)
+#else
+	.suspend_noirq = qup_i2c_suspend,
+	.resume_noirq = qup_i2c_resume, 
+#endif
 	SET_RUNTIME_PM_OPS(
 		i2c_qup_runtime_suspend,
 		i2c_qup_runtime_resume,

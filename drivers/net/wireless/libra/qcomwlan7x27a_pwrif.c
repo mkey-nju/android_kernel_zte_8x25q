@@ -45,7 +45,9 @@ static struct wlan_vreg_info vreg_info[] = {
 	{"bt",        3050000, 3050000, 21, 1, NULL},
 	{"msme1",     1800000, 1800000, 2,  0, NULL},
 	{"wlan_tcx0", 1800000, 1800000, 53, 0, NULL},
-	{"wlan4",     1200000, 1200000, 23, 0, NULL},
+        //[ECID 000000] fanjiankang modify for wlan 20121206
+	//{"wlan4",     1200000, 1200000, 23, 0, NULL},
+	{"wlan1v8",     1200000, 1200000, 23, 0, NULL},
 	{"wlan2",     1350000, 1350000, 9,  1, NULL},
 	{"wlan3",     1200000, 1200000, 10, 1, NULL},
 };

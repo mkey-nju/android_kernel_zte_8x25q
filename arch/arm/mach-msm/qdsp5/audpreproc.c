@@ -115,7 +115,6 @@ static void audpreproc_dsp_event(void *data, unsigned id, size_t len,
 {
 	struct audpreproc_state *audpreproc = data;
 	uint16_t msg[2];
-	MM_ERR("audpreproc_dsp_event %id", id);
 
 	getevent(msg, sizeof(msg));
 

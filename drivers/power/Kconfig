@@ -76,6 +76,14 @@ config BATTERY_DS2780
 	help
 	  Say Y here to enable support for batteries with ds2780 chip.
 
+#[ECID:000000] ZTEBSP doumingming add for high voltage battery, start
+config HIGH_VOLTAGE_BATTERY
+	bool "HIGH_VOLTAGE_BATTERY CHARGING"
+	depends on BATTERY_MSM
+	help
+	  Say Y here to enable HIGH VOLTAGE BATTERY CHARGING
+#[ECID:000000] ZTEBSP doumingming add for high voltage battery, end
+
 config BATTERY_DS2781
 	tristate "2781 battery driver"
 	depends on HAS_IOMEM
@@ -343,6 +351,13 @@ config SMB349_CHARGER
 	  current limiting capabilities. The driver also lets the
 	  SMB349 be operated as a slave device via the power supply
 	  framework.
+
+config BATTERY_EARLYSUSPEND
+	bool "Battery early suspend support"
+	depends on HAS_EARLYSUSPEND
+	default n
+	help
+	  Say Y to enable support for battery monitor early suspend.
 
 config BATTERY_MSM_FAKE
 	tristate "Fake MSM battery"

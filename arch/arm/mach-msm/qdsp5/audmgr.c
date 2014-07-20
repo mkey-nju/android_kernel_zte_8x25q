@@ -199,7 +199,7 @@ static void process_audmgr_callback(struct audmgr_global *amg,
 		MM_ERR("VOLUME_CHANGE?\n");
 		break;
 	case RPC_AUDMGR_STATUS_DISABLED:
-		MM_ERR("DISABLED\n");
+		MM_INFO("DISABLED\n"); 
 		am = (struct audmgr *) be32_to_cpu(
 			((struct rpc_audmgr_cb_ready *)args)->client_data);
 		if (!am)
@@ -245,7 +245,7 @@ static void process_audmgr_callback(struct audmgr_global *amg,
 					be32_to_cpu(temp->d.volume);
 		break;
 	case RPC_AUDMGR_STATUS_DEVICE_CONFIG:
-		MM_ERR("rpc DEVICE_CONFIG\n");
+		MM_INFO("rpc DEVICE_CONFIG\n"); 
 		break;
 	default:
 		break;

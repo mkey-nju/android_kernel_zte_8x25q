@@ -285,6 +285,10 @@ struct msm_snd_endpoint {
 #define SND_AVC_CTL _IOW(SND_IOCTL_MAGIC, 6, unsigned *)
 #define SND_AGC_CTL _IOW(SND_IOCTL_MAGIC, 7, unsigned *)
 
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+#define SND_SET_AUDIO_LOOPBACK _IOW(SND_IOCTL_MAGIC, 8, unsigned *)
+#endif
+
 /*return the number of CAD endpoints supported. */
 
 #define CAD_GET_NUM_ENDPOINTS _IOR(SND_IOCTL_MAGIC, 4, unsigned *)

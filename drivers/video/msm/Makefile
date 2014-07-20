@@ -77,15 +77,32 @@ obj-$(CONFIG_FB_MSM_MIPI_DSI) += msm_mipi.o
 
 # MIPI manufacture
 obj-$(CONFIG_FB_MSM_MIPI_DSI_TOSHIBA) += mipi_toshiba.o
+#wangminrong modify ++
+obj-$(CONFIG_FB_MSM_MIPI_DSI_LEAD) += mipi_lead.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_LEAD) += mipi_lead_video_wvga_pt.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_LEAD) += mipi_4p3_video_fwvga.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_LEAD) += mipi_4p3_video_fwvga_pt.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_LEAD) += mipi_4p5_video_qhd.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_LEAD) += mipi_4p5_video_qhd_pt.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_LEAD) += mipi_5p0_video_qhd.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_LEAD) += mipi_5p0_video_qhd_pt.o
+#wangminrong modify --
+#[ECID:000000] ZTEBSP wangminrong  start 20120419 for A20 or A10 or E01  */
 obj-$(CONFIG_FB_MSM_MIPI_DSI_NOVATEK) += mipi_novatek.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_ORISE) += mipi_orise.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_RENESAS) += mipi_renesas.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_TRULY) += mipi_truly.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_NT35510) += mipi_NT35510.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_HX8389B) += mipi_hx8389b.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_OTM9605A) += mipi_otm9605a.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_NT35516) += mipi_truly_tft540960_1_e.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_NT35590) += mipi_NT35590.o
+obj-$(CONFIG_FB_MSM_MIPI_DSI_HX8392A) += mipi_hx8392a.o
 obj-$(CONFIG_FB_MSM_MIPI_DSI_SIMULATOR) += mipi_simulator.o
+
+#//[ECID:0000]ZTE_BSP maxiaoping 20120427 for lcd backlight driver,start.
+obj-$(CONFIG_TPS61165_LCD_BL) += tps61165_bl.o
+#//[ECID:0000]ZTE_BSP maxiaoping 20120427 for lcd backlight driver,end.
 
 # MIPI Bridge
 obj-$(CONFIG_FB_MSM_MIPI_DSI_TC358764_DSI2LVDS) += mipi_tc358764_dsi2lvds.o
@@ -121,6 +138,7 @@ obj-$(CONFIG_FB_MSM_MDDI_ORISE) += mddi_orise.o
 obj-$(CONFIG_FB_MSM_MDDI_QUICKVX) += mddi_quickvx.o
 endif
 
+#ZTEBSP  yaotierui added mipi_lead_video_wvga_pt.o
 ifeq ($(CONFIG_FB_MSM_MIPI_PANEL_DETECT),y)
 obj-y += mipi_toshiba_video_wvga_pt.o mipi_toshiba_video_wsvga_pt.o mipi_toshiba_video_wuxga.o
 obj-y += mipi_novatek_video_qhd_pt.o mipi_novatek_cmd_qhd_pt.o
@@ -128,13 +146,16 @@ obj-y += mipi_orise_video_720p_pt.o mipi_orise_cmd_720p_pt.o
 obj-y += mipi_renesas_video_fwvga_pt.o mipi_renesas_cmd_fwvga_pt.o
 obj-y += mipi_NT35510_video_wvga_pt.o mipi_NT35510_cmd_wvga_pt.o
 obj-y += mipi_hx8389b_video_qhd_pt.o
+obj-y += mipi_otm9605a_video_qhd_pt.o
 obj-y += mipi_truly_tft540960_1_e_video_qhd_pt.o mipi_truly_tft540960_1_e_cmd_qhd_pt.o
 obj-y += mipi_NT35590_cmd_720p_pt.o mipi_NT35590_video_720p_pt.o
+obj-y += mipi_hx8392a_video_720p_pt.o
 obj-y += mipi_chimei_wxga_pt.o
 obj-y += mipi_chimei_wuxga.o
 obj-y += mipi_truly_video_wvga_pt.o
 else
 obj-$(CONFIG_FB_MSM_MIPI_TOSHIBA_VIDEO_WVGA_PT) += mipi_toshiba_video_wvga_pt.o
+obj-$(CONFIG_FB_MSM_MIPI_LEAD_VIDEO_WVGA_PT) += mipi_lead_video_wvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_TOSHIBA_VIDEO_WSVGA_PT) += mipi_toshiba_video_wsvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_TOSHIBA_VIDEO_WUXGA) += mipi_toshiba_video_wuxga.o
 obj-$(CONFIG_FB_MSM_MIPI_NOVATEK_VIDEO_QHD_PT) += mipi_novatek_video_qhd_pt.o
@@ -148,9 +169,11 @@ obj-$(CONFIG_FB_MSM_MIPI_TRULY_VIDEO_WVGA_PT) += mipi_truly_video_wvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_NT35510_CMD_WVGA_PT) += mipi_NT35510_cmd_wvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_NT35510_VIDEO_WVGA_PT) += mipi_NT35510_video_wvga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_HX8389B_VIDEO_QHD_PT) += mipi_hx8389b_video_qhd_pt.o
+obj-$(CONFIG_FB_MSM_MIPI_OTM9605A_VIDEO_QHD_PT) += mipi_otm9605a_video_qhd_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_NT35516_CMD_QHD_PT) += mipi_truly_tft540960_1_e_cmd_qhd_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_NT35516_VIDEO_QHD_PT) += mipi_truly_tft540960_1_e_video_qhd_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_NT35590_CMD_720P_PT) += mipi_NT35590_cmd_720p_pt.o mipi_NT35590_video_720p_pt.o
+obj-$(CONFIG_FB_MSM_MIPI_HX8392A_VIDEO_720P_PT) += mipi_hx8392a_video_720p_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_SIMULATOR_VIDEO) += mipi_simulator_video.o
 obj-$(CONFIG_FB_MSM_MIPI_CHIMEI_WXGA) += mipi_chimei_wxga_pt.o
 obj-$(CONFIG_FB_MSM_MIPI_CHIMEI_WUXGA) += mipi_chimei_wuxga.o

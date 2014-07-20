@@ -191,8 +191,17 @@
 #define MSM_CAM_IOCTL_EEPROM_IO_CFG \
 	_IOW(MSM_CAM_IOCTL_MAGIC, 53, struct msm_eeprom_cfg_data *)
 
+
+#define MSM_CAM_IOCTL_FLASH_MODE_SET \
+	_IOW(MSM_CAM_IOCTL_MAGIC, 254, led_mode_t)
 #define MSM_CAM_IOCTL_ISPIF_IO_CFG \
 	_IOR(MSM_CAM_IOCTL_MAGIC, 54, struct ispif_cfg_data *)
+
+#define MSM_CAM_IOCTL_SET_SENSOR_AF_RECT \
+    _IOR(MSM_CAM_IOCTL_MAGIC, 101, struct msm_sensor_af_rect_data *)
+
+#define MSM_CAM_IOCTL_GET_FLASH_AUTO_STATE \
+    _IOR(MSM_CAM_IOCTL_MAGIC, 102, uint8_t *)
 
 struct msm_mctl_pp_cmd {
 	int32_t  id;
@@ -852,9 +861,12 @@ struct msm_snapshot_pp_status {
 
 /* QRD */
 #define CAMERA_EFFECT_BW		10
-#define CAMERA_EFFECT_BLUISH	12
-#define CAMERA_EFFECT_REDDISH	13
-#define CAMERA_EFFECT_GREENISH	14
+//#define CAMERA_EFFECT_BLUISH	12
+//#define CAMERA_EFFECT_REDDISH	13
+//#define CAMERA_EFFECT_GREENISH	14
+#define CAMERA_EFFECT_REDDISH	5
+#define CAMERA_EFFECT_BLUISH	6
+#define CAMERA_EFFECT_GREENISH	7
 
 /* PIP working mode */
 #define CAM_WORKING_MODE_NORMAL     0
@@ -1008,6 +1020,9 @@ enum msm_v4l2_special_effect {
 	MSM_V4L2_EFFECT_NEGATIVE,
 	MSM_V4L2_EFFECT_SOLARIZE,
 	MSM_V4L2_EFFECT_SEPIA,
+	MSM_V4L2_EFFECT_REDISH,
+	MSM_V4L2_EFFECT_BLUEISH,
+	MSM_V4L2_EFFECT_GREENISH,
 	MSM_V4L2_EFFECT_POSTERAIZE,
 	MSM_V4L2_EFFECT_WHITEBOARD,
 	MSM_V4L2_EFFECT_BLACKBOARD,
@@ -1024,6 +1039,36 @@ enum msm_v4l2_power_line_frequency {
 	MSM_V4L2_POWER_LINE_50HZ,
 	MSM_V4L2_POWER_LINE_AUTO,
 };
+
+
+enum msm_v4l2_brightness_level {
+	MSM_V4L2_BRIGHTNESS_L0,
+	MSM_V4L2_BRIGHTNESS_L1,
+	MSM_V4L2_BRIGHTNESS_L2,
+	MSM_V4L2_BRIGHTNESS_L3,
+	MSM_V4L2_BRIGHTNESS_L4,
+	MSM_V4L2_BRIGHTNESS_L5,
+	MSM_V4L2_BRIGHTNESS_L6,
+	MSM_V4L2_BRIGHTNESS_L7,
+	MSM_V4L2_BRIGHTNESS_L8,
+	MSM_V4L2_BRIGHTNESS_L9,	
+	MSM_V4L2_BRIGHTNESS_L10,		
+};
+
+enum msm_v4l2_scene_level {
+	MSM_V4L2_SCENE_AUTO,
+	MSM_V4L2_SCENE_LANDSCAPE,
+	MSM_V4L2_SCENE_FIREWORK,
+	MSM_V4L2_SCENE_BEACH,
+	MSM_V4L2_SCENE_PARTY,
+	MSM_V4L2_SCENE_PORTRAIT,
+	MSM_V4L2_SCENE_SUNSET,
+	MSM_V4L2_SCENE_SNOW,
+	MSM_V4L2_SCENE_NIGHT,
+	MSM_V4L2_SCENE_SPORTS,
+	MSM_V4L2_SCENE_CANDLELIGHT,	
+};
+
 
 #define CAMERA_ISO_TYPE_AUTO           0
 #define CAMEAR_ISO_TYPE_HJR            1
@@ -1250,6 +1295,13 @@ enum ispif_cfg_type_t {
 	ISPIF_RELEASE,
 };
 
+struct msm_sensor_af_rect_data{
+    int x;
+    int y;
+    int dx;
+    int dy;
+};
+
 struct ispif_cfg_data {
 	enum ispif_cfg_type_t cfgtype;
 	union {
@@ -1407,6 +1459,9 @@ enum af_camera_name {
 	ACTUATOR_MAIN_CAM_5,
 	ACTUATOR_MAIN_CAM_6,
 	ACTUATOR_MAIN_CAM_7,
+	ACTUATOR_MAIN_CAM_8,
+	ACTUATOR_MAIN_CAM_9,
+	ACTUATOR_MAIN_CAM_10,
 	ACTUATOR_WEB_CAM_0,
 	ACTUATOR_WEB_CAM_1,
 	ACTUATOR_WEB_CAM_2,
@@ -1545,6 +1600,7 @@ struct flash_ctrl_data {
 struct msm_camsensor_info {
 	char name[MAX_SENSOR_NAME];
 	uint8_t flash_enabled;
+    uint8_t autofocus_disable;
 	uint8_t strobe_flash_enabled;
 	uint8_t actuator_enabled;
 	uint8_t ispif_supported;

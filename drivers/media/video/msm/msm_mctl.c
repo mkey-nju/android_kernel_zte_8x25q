@@ -75,6 +75,14 @@ static struct msm_isp_color_fmt msm_isp_formats[] = {
 	.colorspace = V4L2_COLORSPACE_JPEG,
 	},
 	{
+	.name	   = "NV12BAYER",
+	.depth	  = 8,
+	.bitsperpxl = 8,
+	.fourcc	 = V4L2_PIX_FMT_NV12,
+	.pxlcode	= V4L2_MBUS_FMT_SGRBG10_1X10, /* Bayer sensor */
+	.colorspace = V4L2_COLORSPACE_JPEG,
+	},
+	{
 	.name	   = "NV21BAYER",
 	.depth	  = 8,
 	.bitsperpxl = 8,
@@ -222,6 +230,33 @@ static int msm_mctl_cmd(struct msm_cam_media_controller *p_mctl,
 	case MSM_CAM_IOCTL_GET_SENSOR_INFO:
 			rc = msm_get_sensor_info(p_mctl, argp);
 			break;
+
+    case MSM_CAM_IOCTL_SET_SENSOR_AF_RECT:
+    {
+        struct msm_sensor_af_rect_data afrect;
+        struct msm_sensor_ctrl_t *s_ctrl = get_sctrl(p_mctl->sensor_sdev);
+        
+        if (copy_from_user(&afrect,
+            (void *)argp,
+            sizeof(struct msm_sensor_af_rect_data))) {
+            ERR_COPY_FROM_USER();
+            return -EFAULT;
+        }
+        s_ctrl->func_tbl->sensor_set_af_rect(s_ctrl, &afrect);
+        break;
+    }
+
+    case MSM_CAM_IOCTL_GET_FLASH_AUTO_STATE:
+    {
+        uint8_t AutoFlash = 0; 
+        struct msm_sensor_ctrl_t *s_ctrl = get_sctrl(p_mctl->sensor_sdev);
+        pr_err("%s: Get Flash Auto State \n", __func__);
+        if(s_ctrl->func_tbl->sensor_flash_auto_state!=NULL)
+           s_ctrl->func_tbl->sensor_flash_auto_state(s_ctrl, &AutoFlash);
+
+        *(uint8_t *)arg = AutoFlash;
+        break;
+    }
 
 	case MSM_CAM_IOCTL_SENSOR_IO_CFG:
 		rc = v4l2_subdev_call(p_mctl->sensor_sdev,
@@ -377,10 +412,19 @@ static int msm_mctl_cmd(struct msm_cam_media_controller *p_mctl,
 			rc = -EFAULT;
 		} else {
 			if (msm_sensor_state_check(p_mctl))
-				rc = msm_flash_ctrl(p_mctl->sdata, &flash_info);
+			        rc = msm_flash_ctrl(p_mctl->sdata, &flash_info);
 		}
 		break;
 	}
+	
+#ifdef CONFIG_ZTE_CAMERA_SOC_FLASH	
+	case MSM_CAM_IOCTL_FLASH_MODE_SET: {
+		
+		led_mode_t  flash_mode= (led_mode_t)arg;
+		msm_flash_mode_set(flash_mode);
+		break;
+	}
+#endif	
 	case MSM_CAM_IOCTL_PICT_PP:
 		rc = msm_mctl_set_pp_key(p_mctl, (void __user *)arg);
 		break;
@@ -934,7 +978,7 @@ static int msm_mctl_dev_open(struct file *f)
 
 	D("%s active %d\n", __func__, pcam->mctl_node.active);
 	msm_setup_v4l2_event_queue(&pcam_inst->eventHandle,
-			pcam->mctl_node.pvdev);
+					pcam->mctl_node.pvdev);
 
 	pcam_inst->vbqueue_initialized = 0;
 	kref_get(&pmctl->refcount);

@@ -75,16 +75,21 @@ int32_t msm_actuator_i2c_write(struct msm_actuator_ctrl_t *a_ctrl,
 	CDBG("%s: IN\n", __func__);
 	for (i = 0; i < size; i++) {
 		if (write_arr[i].reg_write_type == MSM_ACTUATOR_WRITE_DAC) {
+			
+                   #ifdef ROHM_BU64291GWZ_ACT
+			value = ((((next_lens_position >>8)&0x03)|0xF4)<<8)|(next_lens_position&0xFF);
+                   #else
 			value = (next_lens_position <<
 				write_arr[i].data_shift) |
 				((hw_dword & write_arr[i].hw_mask) >>
 				write_arr[i].hw_shift);
-
+                   #endif
+            
 			if (write_arr[i].reg_addr != 0xFFFF) {
 				i2c_byte1 = write_arr[i].reg_addr;
 				i2c_byte2 = value;
 				if (size != (i+1)) {
-					i2c_byte2 = (i2c_byte2 & 0xFF00) >> 8;
+					i2c_byte2 = value & 0xFF;
 					CDBG("%s: byte1:0x%x, byte2:0x%x\n",
 					__func__, i2c_byte1, i2c_byte2);
 					rc = msm_camera_i2c_write(
@@ -99,7 +104,7 @@ int32_t msm_actuator_i2c_write(struct msm_actuator_ctrl_t *a_ctrl,
 
 					i++;
 					i2c_byte1 = write_arr[i].reg_addr;
-					i2c_byte2 = value & 0xFF;
+					i2c_byte2 = (value & 0xFF00) >> 8;
 				}
 			} else {
 				i2c_byte1 = (value & 0xFF00) >> 8;

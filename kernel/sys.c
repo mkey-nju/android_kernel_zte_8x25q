@@ -364,7 +364,9 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
  */
 void kernel_restart(char *cmd)
 {
+	printk( " PM_DEBUG_MXP:Enter kernel_restart.\n");
 	kernel_restart_prepare(cmd);
+	disable_nonboot_cpus();
 	if (!cmd)
 		printk(KERN_EMERG "Restarting system.\n");
 	else
@@ -411,7 +413,7 @@ void kernel_power_off(void)
 	disable_nonboot_cpus();
 	syscore_shutdown();
 	printk(KERN_EMERG "Power down.\n");
-	kmsg_dump(KMSG_DUMP_POWEROFF);
+	kmsg_dump(KMSG_DUMP_POWEROFF);//QCT default enable.
 	machine_power_off();
 }
 EXPORT_SYMBOL_GPL(kernel_power_off);

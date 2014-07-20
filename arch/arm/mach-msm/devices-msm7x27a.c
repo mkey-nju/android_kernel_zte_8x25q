@@ -30,6 +30,9 @@
 #include <asm/cacheflush.h>
 #include <mach/rpc_hsusb.h>
 #include <mach/socinfo.h>
+#include <linux/seq_file.h>
+#include <linux/proc_fs.h>
+#include <linux/module.h>
 
 #include "devices.h"
 #include "devices-msm7x2xa.h"
@@ -1211,6 +1214,18 @@ static struct resource gsbi0_msm8625_qup_resources[] = {
 		.end	= MSM8625_INT_PWB_I2C,
 		.flags	= IORESOURCE_IRQ,
 	},
+	{
+		.name	= "i2c_clk",
+		.start	= 60,
+		.end	= 60,
+		.flags	= IORESOURCE_IO,
+	},
+	{
+		.name	= "i2c_sda",
+		.start	= 61,
+		.end	= 61,
+		.flags	= IORESOURCE_IO,
+	},
 };
 
 /* Use GSBI0 QUP for /dev/i2c-0 */
@@ -1240,13 +1255,25 @@ static struct resource gsbi1_msm8625_qup_i2c_resources[] = {
 		.end	= MSM8625_INT_ARM11_DMA,
 		.flags	= IORESOURCE_IRQ,
 	},
+	{
+		.name	= "i2c_clk",
+		.start	= 131,
+		.end	= 131,
+		.flags	= IORESOURCE_IO,
+	},
+	{
+		.name	= "i2c_sda",
+		.start	= 132,
+		.end	= 132,
+		.flags	= IORESOURCE_IO,
+	},
 };
 
 /* Use GSBI1 QUP for /dev/i2c-1 */
 struct platform_device msm8625_gsbi1_qup_i2c_device = {
 	.name		= "qup_i2c",
 	.id		= MSM_GSBI1_QUP_I2C_BUS_ID,
-	.num_resources	= ARRAY_SIZE(gsbi1_qup_i2c_resources),
+	.num_resources	= ARRAY_SIZE(gsbi1_msm8625_qup_i2c_resources),
 	.resource	= gsbi1_msm8625_qup_i2c_resources,
 };
 
@@ -1704,8 +1731,6 @@ static int __init msm8625_cpu_id(void)
 	case 0x774:
 	case 0x781:
 	case 0x8D1:
-	case 0x8E0:
-	case 0x8E1:
 		cpu = MSM8625A;
 		break;
 	case 0x775:
@@ -1818,6 +1843,7 @@ static struct msm_cpr_config msm_cpr_pdata = {
 	.cpr_mode_data = &msm_cpr_mode_data,
 	.tgt_count_div_N = 1,
 	.floor = 0,
+	.pvs_fuse = 0,
 	.ceiling = 40,
 	.sw_vlevel = 20,
 	.up_threshold = 1,
@@ -1848,11 +1874,19 @@ static struct platform_device msm8625_vp_device = {
 	.name           = "vp-regulator",
 	.id             = -1,
 };
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+#define FUSE_INFO_LEN 1024
+char msm_fuse_info[FUSE_INFO_LEN];
+#endif
 
 static void __init msm_cpr_init(void)
 {
 	struct cpr_info_type *cpr_info = NULL;
 	uint8_t ring_osc = 0;
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+	char tmp_buf[100] = "";
+	uint32_t fuse_len = 0; 
+#endif
 
 	cpr_info = kzalloc(sizeof(struct cpr_info_type), GFP_KERNEL);
 	if (!cpr_info) {
@@ -1862,7 +1896,6 @@ static void __init msm_cpr_init(void)
 
 	msm_smem_get_cpr_info(cpr_info);
 	msm_cpr_pdata.disable_cpr = cpr_info->disable_cpr;
-	msm_cpr_pdata.pvs_fuse = cpr_info->pvs_fuse;
 
 	/**
 	 * Set the ring_osc based on efuse BIT(0)
@@ -1930,7 +1963,6 @@ static void __init msm_cpr_init(void)
 	pr_info("%s: cpr: turbo_quot: 0x%x\n", __func__, cpr_info->turbo_quot);
 	pr_info("%s: cpr: pvs_fuse: 0x%x\n", __func__, cpr_info->pvs_fuse);
 	pr_info("%s: cpr: floor_fuse: 0x%x\n", __func__, cpr_info->floor_fuse);
-	kfree(cpr_info);
 
 	if ((msm8625_cpu_id() == MSM8625A) || cpu_is_msm8625q())
 		msm_cpr_pdata.max_freq = 1209600;
@@ -1945,12 +1977,82 @@ static void __init msm_cpr_init(void)
 	pr_info("%s: cpr: nom_Vmax: %d, turbo_Vmax: %d\n", __func__,
 		msm_cpr_mode_data.nom_Vmax,
 		msm_cpr_mode_data.turbo_Vmax);
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+	memset(msm_fuse_info, FUSE_INFO_LEN, 0);
+	fuse_len += sprintf(tmp_buf, "MSM_FUSE_TAG : ");
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, socinfo_buf);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, "cpr: ring_osc: 0x%x ",msm_cpr_mode_data.ring_osc);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, "cpr: turbo_quot: 0x%x ", cpr_info->turbo_quot);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, "cpr: floor_fuse: 0x%x ", cpr_info->floor_fuse);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, "cpr: pvs_fuse: 0x%x ", cpr_info->pvs_fuse);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+	fuse_len += sprintf(tmp_buf, "cpr: nom_Vmin: %d, turbo_Vmin: %d", msm_cpr_mode_data.nom_Vmin, msm_cpr_mode_data.turbo_Vmin);
+	if(fuse_len < FUSE_INFO_LEN)
+		strcat(msm_fuse_info, tmp_buf);
+#endif
+
+	/*add this for debug the phone is which type*/
+	msm_cpr_pdata.pvs_fuse = cpr_info->pvs_fuse;
+	msm_cpr_pdata.floor = cpr_info->floor_fuse;
+	kfree(cpr_info);
 
 	if (cpu_is_msm8625())
 		platform_device_register(&msm8625_vp_device);
 
 	platform_device_register(&msm8625_device_cpr);
 }
+
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+#ifdef CONFIG_PROC_FS
+/*
+ * read /proc/fuseinfo to get some info about msm8x25 chip
+ */
+static int msm_fuse_proc_show(struct seq_file *m, void *v)
+{
+	seq_write(m, msm_fuse_info, strlen(msm_fuse_info));
+	return 0;
+}
+
+static int msm_fuse_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, msm_fuse_proc_show, NULL);
+}
+
+static const struct file_operations proc_msm_fuse_operations = {
+	.owner		= THIS_MODULE,
+	.open		= msm_fuse_proc_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+
+};
+
+static void fuse_init_procfs(void)
+{
+	if (!proc_create("fuseinfo", S_IRUSR, NULL,
+			 &proc_msm_fuse_operations))
+		pr_err("Failed to register fuse proc interface\n");
+}
+
+#else
+
+static inline void fuse_init_procfs(void)
+{
+}
+
+#endif /* CONFIG_PROC_FS */
+#endif
 
 static struct resource pbus_resources[] = {
 {
@@ -2122,11 +2224,11 @@ int __init msm7x2x_misc_init(void)
 		msm_acpuclock_init(1);
 		platform_device_register(&msm8625q_device_acpuclk);
 	} else if (cpu_is_msm8625()) {
-
-		if (machine_is_qrd_skud_prime()) {
-			msm_acpuclock_init(0);
-			platform_device_register(&msm8625q_device_acpuclk);
-		} else if (msm8625_cpu_id() == MSM8625)
+		//if (machine_is_msm8625q_skud()) {
+		//	msm_acpuclock_init(0);
+		//	platform_device_register(&msm8625q_device_acpuclk);
+		//} else
+		if (msm8625_cpu_id() == MSM8625)
 			platform_device_register(&msm7x27aa_device_acpuclk);
 		else if (msm8625_cpu_id() == MSM8625A)
 			platform_device_register(&msm8625_device_acpuclk);
@@ -2149,6 +2251,10 @@ int __init msm7x2x_misc_init(void)
 		pl310_resources[1].start = INT_L2CC_INTR;
 
 	platform_device_register(&pl310_erp_device);
+
+#if defined(CONFIG_MSM_FUSE_INFO_DEBUG)
+	fuse_init_procfs();
+#endif
 
 	msm_pbus_init();
 	if (msm_gpio_config_gps() < 0)

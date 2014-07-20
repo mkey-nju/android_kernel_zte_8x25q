@@ -61,6 +61,9 @@ static struct snd_curr_dev_info curr_dev;
 #define SND_CAD_SET_DEVICE_PROC 40
 #define SND_CAD_SET_VOLUME_PROC 39
 #define MAX_SND_ACTIVE_DEVICE 2
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+  #define SND_AUDIO_LOOPBACK_PROC 52
+#endif
 
 struct rpc_cad_set_device_args {
 	struct cad_devices_type device;
@@ -89,6 +92,13 @@ struct snd_cad_set_volume_msg {
 	struct rpc_request_hdr hdr;
 	struct rpc_cad_set_volume_args args;
 };
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+struct rpc_snd_lb_ctl_args {
+	uint32_t lb_ctl;
+	uint32_t cb_func;
+	uint32_t client_data;
+};
+#endif
 
 struct cad_endpoint *get_cad_endpoints(int *size);
 
@@ -196,6 +206,12 @@ static int rtc_debugfs_create_entry()
 	return 0;
 }
 #endif
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+struct snd_set_lb_msg {
+	struct rpc_request_hdr hdr;
+	struct rpc_snd_lb_ctl_args args;
+};
+#endif
 
 static inline int check_mute(int mute)
 {
@@ -237,12 +253,18 @@ static long snd_cad_ioctl(struct file *file, unsigned int cmd,
 {
 	struct snd_cad_set_device_msg dmsg;
 	struct snd_cad_set_volume_msg vmsg;
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+	struct snd_set_lb_msg lb_msg;
+#endif
 
 	struct msm_cad_device_config dev;
 	struct msm_cad_volume_config vol;
 	struct snd_cad_ctxt *snd = file->private_data;
 	int rc = 0;
 
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+	uint32_t set_lb;
+#endif
 	mutex_lock(&snd->lock);
 	switch (cmd) {
 	case SND_SET_DEVICE:
@@ -267,7 +289,7 @@ static long snd_cad_ioctl(struct file *file, unsigned int cmd,
 		dmsg.args.client_data = 0;
 		curr_dev.tx_dev = dev.device.tx_device;
 		curr_dev.rx_dev = dev.device.rx_device;
-		MM_ERR("snd_cad_set_device %d %d %d %d\n", dev.device.rx_device,
+		MM_INFO("snd_cad_set_device %d %d %d %d\n", dev.device.rx_device,
 			dev.device.tx_device, dev.ear_mute, dev.mic_mute);
 
 		rc = msm_rpc_call(snd->ept,
@@ -317,6 +339,28 @@ static long snd_cad_ioctl(struct file *file, unsigned int cmd,
 		rc = get_endpoint(snd, arg);
 		break;
 
+#ifdef CONFIG_ZTE_AUDIO_LOOP_BACK_FUNC
+	case SND_SET_AUDIO_LOOPBACK:
+		if (get_user(set_lb, (uint32_t __user *) arg)) {
+			rc = -EFAULT;
+			break;
+		} else if ((set_lb != 1) && (set_lb != 0)) {
+			rc = -EINVAL;
+			break;
+		}
+
+		lb_msg.args.lb_ctl = cpu_to_be32(set_lb);
+
+		lb_msg.args.cb_func = -1;
+		lb_msg.args.client_data = 0;
+
+		pr_info("snd_lb_ctl %d\n", set_lb);
+
+		rc = msm_rpc_call(snd->ept,
+			SND_AUDIO_LOOPBACK_PROC,
+			&lb_msg, sizeof(lb_msg), 5 * HZ);
+		break;
+#endif
 	default:
 		MM_ERR("unknown command\n");
 		rc = -EINVAL;

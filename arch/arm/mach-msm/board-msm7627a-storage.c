@@ -1,4 +1,4 @@
-/* Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2011-2013, The Linux Foundation. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -112,6 +112,31 @@ static struct msm_gpio sdc3_cfg_data[] = {
 #endif
 };
 
+static struct msm_gpio sdc3_sleep_cfg_data[] = {
+	{GPIO_CFG(88, 1, GPIO_CFG_INPUT, GPIO_CFG_NO_PULL, GPIO_CFG_2MA),
+								"sdc3_clk"},
+	{GPIO_CFG(89, 1, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
+								"sdc3_cmd"},
+	{GPIO_CFG(90, 1, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
+								"sdc3_dat_3"},
+	{GPIO_CFG(91, 1, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
+								"sdc3_dat_2"},
+	{GPIO_CFG(92, 1, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
+								"sdc3_dat_1"},
+	{GPIO_CFG(93, 1, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
+								"sdc3_dat_0"},
+#ifdef CONFIG_MMC_MSM_SDC3_8_BIT_SUPPORT
+	{GPIO_CFG(19, 3, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
+								"sdc3_dat_7"},
+	{GPIO_CFG(20, 3, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
+								"sdc3_dat_6"},
+	{GPIO_CFG(21, 3, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
+								"sdc3_dat_5"},
+	{GPIO_CFG(108, 3, GPIO_CFG_INPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA),
+								"sdc3_dat_4"},
+#endif
+};
+
 static struct msm_gpio sdc4_cfg_data[] = {
 	{GPIO_CFG(19, 1, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_10MA),
 								"sdc4_dat_3"},
@@ -140,6 +165,8 @@ static struct sdcc_gpio sdcc_cfg_data[] = {
 	{
 		.cfg_data = sdc3_cfg_data,
 		.size = ARRAY_SIZE(sdc3_cfg_data),
+
+		.sleep_cfg_data = sdc3_sleep_cfg_data,		
 	},
 	{
 		.cfg_data = sdc4_cfg_data,
@@ -147,14 +174,22 @@ static struct sdcc_gpio sdcc_cfg_data[] = {
 	},
 };
 
-static int gpio_sdc1_hw_det = 85;
+
+static int gpio_sdc1_hw_det = ZTE_GPIO_SDCARD_DET; 
+
+
 static void gpio_sdc1_config(void)
 {
+/*
 	if (machine_is_msm7627a_qrd1() || machine_is_msm7627a_evb()
 					|| machine_is_msm8625_evb()
 					|| machine_is_msm7627a_qrd3()
 					|| machine_is_msm8625_qrd7())
 		gpio_sdc1_hw_det = 42;
+	else if (machine_is_msm8625q_skue())
+		gpio_sdc1_hw_det = 112;
+*/
+		gpio_sdc1_hw_det = ZTE_GPIO_SDCARD_DET; 
 }
 
 static struct regulator *sdcc_vreg_data[MAX_SDCC_CONTROLLER];
@@ -224,6 +259,9 @@ static uint32_t msm_sdcc_setup_power(struct device *dv, unsigned int vdd)
 
 	pdev = container_of(dv, struct platform_device, dev);
 
+	if (machine_is_msm8625q_skue() && (pdev->id == 1) && (!vdd))
+		return 0;
+
 	rc = msm_sdcc_setup_gpio(pdev->id, !!vdd);
 	if (rc)
 		goto out;
@@ -238,9 +276,16 @@ static unsigned int msm7627a_sdcc_slot_status(struct device *dev)
 {
 	int status;
 
+
+#if  defined(CONFIG_PROJECT_P825F02) || defined(CONFIG_PROJECT_P865F04)|| defined(CONFIG_PROJECT_P865G01) || defined(CONFIG_PROJECT_P865F05)  || defined(CONFIG_PROJECT_P825V20)
+	status = gpio_tlmm_config(GPIO_CFG(gpio_sdc1_hw_det, 0, GPIO_CFG_INPUT,
+				GPIO_CFG_NO_PULL, GPIO_CFG_8MA),
+				GPIO_CFG_ENABLE);
+#else
 	status = gpio_tlmm_config(GPIO_CFG(gpio_sdc1_hw_det, 2, GPIO_CFG_INPUT,
 				GPIO_CFG_PULL_UP, GPIO_CFG_8MA),
 				GPIO_CFG_ENABLE);
+#endif
 	if (status)
 		pr_err("%s:Failed to configure tlmm for GPIO %d\n", __func__,
 				gpio_sdc1_hw_det);
@@ -256,13 +301,15 @@ static unsigned int msm7627a_sdcc_slot_status(struct device *dev)
 					machine_is_msm7627a_evb() ||
 					machine_is_msm8625_evb()  ||
 					machine_is_msm7627a_qrd3() ||
-					machine_is_msm8625_qrd7())
+					machine_is_msm8625_qrd7() ||
+					machine_is_msm8625q_skue())
 				status = !gpio_get_value(gpio_sdc1_hw_det);
 			else
 				status = gpio_get_value(gpio_sdc1_hw_det);
 		}
 		gpio_free(gpio_sdc1_hw_det);
 	}
+        status = !status; 
 	return status;
 }
 
@@ -275,6 +322,7 @@ static struct mmc_platform_data sdc1_plat_data = {
 	.msmsdcc_fmax   = 49152000,
 	.status      = msm7627a_sdcc_slot_status,
 	.irq_flags   = IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+	.hw_resetable	= 1,
 };
 #endif
 
@@ -369,14 +417,6 @@ void __init msm7627a_init_mmc(void)
 	if (!(machine_is_msm7627a_qrd3() || machine_is_msm8625_qrd7())) {
 		if (mmc_regulator_init(3, "emmc", 3000000))
 			return;
-		/*
-		 * On 7x25A FFA data CRC errors are seen, which are
-		 * probably due to the proximity of SIM card and eMMC.
-		 * Hence, reducing the clock to 24.7Mhz from 49Mhz.
-		 */
-		if (machine_is_msm7625a_ffa())
-			sdc3_plat_data.msmsdcc_fmax =
-				sdc3_plat_data.msmsdcc_fmid;
 		msm_add_sdcc(3, &sdc3_plat_data);
 	}
 #endif
@@ -386,11 +426,10 @@ void __init msm7627a_init_mmc(void)
 	if (mmc_regulator_init(1, "mmc", 2850000))
 		return;
 	/* 8x25 EVT do not use hw detector */
-	if (!((machine_is_msm8625_evt() || machine_is_qrd_skud_prime() ||
-				machine_is_msm8625q_evbd() || machine_is_msm8625q_skud())))
+	if (!(machine_is_msm8625_qrd5()) && !(machine_is_msm7x27a_qrd5a()) 
+                                && !(machine_is_msm8625q_evbd()))
 		sdc1_plat_data.status_irq = MSM_GPIO_TO_INT(gpio_sdc1_hw_det);
-	if (machine_is_msm8625_evt() || machine_is_qrd_skud_prime() ||
-				machine_is_msm8625q_evbd() || machine_is_msm8625q_skud())
+	else
 		sdc1_plat_data.status = NULL;
 
 	msm_add_sdcc(1, &sdc1_plat_data);

@@ -56,7 +56,7 @@ obj-$(CONFIG_TOUCHSCREEN_ST1232)	+= st1232.o
 obj-$(CONFIG_TOUCHSCREEN_STMPE)		+= stmpe-ts.o
 obj-$(CONFIG_TOUCHSCREEN_TI_TSCADC)	+= ti_tscadc.o
 obj-$(CONFIG_TOUCHSCREEN_TNETV107X)	+= tnetv107x-ts.o
-obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI)	+= synaptics_i2c_rmi.o
+#obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI)	+= synaptics_i2c_rmi.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_RMI4_I2C) +=synaptics/
 obj-$(CONFIG_TOUCHSCREEN_TOUCHIT213)	+= touchit213.o
 obj-$(CONFIG_TOUCHSCREEN_TOUCHRIGHT)	+= touchright.o
@@ -76,6 +76,7 @@ obj-$(CONFIG_TOUCHSCREEN_WM97XX_MAINSTONE)	+= mainstone-wm97xx.o
 obj-$(CONFIG_TOUCHSCREEN_WM97XX_ZYLONITE)	+= zylonite-wm97xx.o
 obj-$(CONFIG_TOUCHSCREEN_W90X900)	+= w90p910_ts.o
 obj-$(CONFIG_TOUCHSCREEN_TPS6507X)	+= tps6507x-ts.o
+obj-$(CONFIG_TOUCHSCREEN_FT5X06)	+= ft5x06_ts.o
 obj-$(CONFIG_TOUCHSCREEN_MSM_LEGACY)		+= msm_touch.o
 obj-$(CONFIG_TOUCHSCREEN_CY8C_TS)	+= cy8c_ts.o
 obj-$(CONFIG_TOUCHSCREEN_CYTTSP_I2C_QC)       += cyttsp-i2c-qc.o
@@ -83,3 +84,37 @@ obj-$(CONFIG_TOUCHSCREEN_FT5X06)	+= ft5x06_ts.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)		+= synaptics_i2c_rmi4.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_RMI4_DEV)	+= synaptics_rmi_dev.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE) 	+= synaptics_fw_update.o
+#[ECID:000000] ZTEBSP zhangzhao, add for  touchscreen, start
+ifeq ($(CONFIG_PROJECT_P825F02),y)
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI)	+= synaptics_i2c_rmi_p825f02.o
+obj-$(CONFIG_TOUCHSCREEN_FOCALTECH_NEW)	       += ft5x0x_ts_new.o
+else
+ifeq ($(CONFIG_PROJECT_P865F04),y)
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI)	+= synaptics_i2c_rmi_p825f02.o
+obj-$(CONFIG_TOUCHSCREEN_FOCALTECH_NEW)	       += ft5x0x_ts_new.o
+#//[ECID:0000]ZTE_BSP maxiaoping 20130124 modify for P865F05 basic driver,start.
+else
+ifeq ($(CONFIG_PROJECT_P825V20),y)
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI)	+= synaptics_i2c_rmi_p825v20.o
+obj-$(CONFIG_TOUCHSCREEN_FOCALTECH_NEW)	       += ft5x0x_ts_new_v20.o
+#//[ECID:0000]ZTE_BSP maxiaoping 20130124 modify for P865F05 basic driver,start.
+else
+ifeq ($(CONFIG_PROJECT_P865G01),y)
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI)	+= synaptics_i2c_rmi_p865g01.o
+obj-$(CONFIG_TOUCHSCREEN_FOCALTECH_NEW)	       += ft5x0x_ts_new.o
+
+else
+ifeq ($(CONFIG_PROJECT_P865F05),y)
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI)	+= synaptics_i2c_rmi_p865f05.o
+obj-$(CONFIG_TOUCHSCREEN_FOCALTECH_NEW)	       += ft5x0x_ts_new.o
+
+else
+obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI)	+= synaptics_i2c_rmi_p825f02.o
+obj-$(CONFIG_TOUCHSCREEN_FOCALTECH_NEW)	       += ft5x0x_ts_new.o
+#//[ECID:0000]ZTE_BSP maxiaoping 20130124 modify for P865F05 basic driver,end.
+endif
+endif
+endif
+endif
+endif
+#[ECID:000000] ZTEBSP zhangzhao, add for  touchscreen, end

@@ -988,4 +988,20 @@ config TOUCHSCREEN_SYNAPTICS_DSX_FW_UPDATE
 	  To compile this driver as a module, choose M here: the
 	  module will be called synaptics_dsx_fw_update.
 
+#ZTEBSP   yaotierui 
+ config TOUCHSCREEN_VIRTUAL_KEYS
+       tristate "touchscreens virtual key support"
+       default n 
+ config TOUCHSCREEN_FOCALTECH_NEW
+       tristate "FocalTech touchscreen new"
+       depends on I2C
+       default n
+       
+config FTS_USB_NOTIFY
+		tristate "notify touchscrenn about usb plugin/plugout event"
+		default n 
+
+config SUPPORT_FTS_CTP_UPG
+		tristate "FOCALTECH firmware update"
+		default n 
 endif

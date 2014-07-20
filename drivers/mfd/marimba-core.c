@@ -25,7 +25,13 @@
 #include <linux/slab.h>
 #include <linux/debugfs.h>
 #include <linux/module.h>
+// added by yangze for bt not open sometimes start
+#include <linux/interrupt.h>
+#include <linux/delay.h>
 
+#define	I2C_RETRY_DELAY		5
+#define	I2C_RETRIES		5
+// added by yangze for bt not open sometimes start
 #define MARIMBA_MODE				0x00
 
 #define ADIE_ARRY_SIZE  (CHIP_ID_MAX * MARIMBA_NUM_CHILD)
@@ -172,6 +178,8 @@ int marimba_write_bit_mask(struct marimba *marimba, u8 reg, u8 *value,
 	struct i2c_msg *msg;
 	u8 data[num_bytes + 1];
 	u8 mask_value[num_bytes];
+	
+	int tries = 0; //added by yangze 20130319
 
 	marimba = &marimba_modules[marimba->mod_id];
 	if (marimba == NULL) {
@@ -199,14 +207,24 @@ int marimba_write_bit_mask(struct marimba *marimba, u8 reg, u8 *value,
 	msg->buf = data;
 	data[0] = reg;
 	memcpy(data+1, mask_value, num_bytes);
-
+	// modified by yangze for bt not open sometimes start
+	#if 0
 	ret = i2c_transfer(marimba->client->adapter, marimba->xfer_msg, 1);
 
 	/* Try again if the write fails */
 	if (ret != 1)
 		ret = i2c_transfer(marimba->client->adapter,
 						marimba->xfer_msg, 1);
-
+	#else
+	do {
+		ret = i2c_transfer(marimba->client->adapter, marimba->xfer_msg, 1);
+		if (ret != 1){
+			dev_err(&marimba->client->dev, "i2c write retry number is %d\n",(tries+1));
+			msleep_interruptible(I2C_RETRY_DELAY);
+		}
+	} while ((ret != 1) && (++tries < I2C_RETRIES));
+	#endif
+	// modified by yangze for bt not open sometimes end
 	if (ret == 1) {
 		for (i = 0; i < num_bytes; i++)
 			marimba_shadow[marimba->mod_id][reg + i]
