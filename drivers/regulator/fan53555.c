@@ -22,7 +22,6 @@
 #include <linux/i2c.h>
 #include <linux/slab.h>
 #include <linux/regmap.h>
-
 #include <linux/syscore_ops.h>
 #include <linux/regulator/fan53555.h>
 #include <linux/delay.h>
