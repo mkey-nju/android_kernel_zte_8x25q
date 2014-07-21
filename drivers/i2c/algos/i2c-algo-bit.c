@@ -557,6 +557,12 @@ static int bit_xfer(struct i2c_adapter *i2c_adap,
        i2c_adap->recover_bus(i2c_adap);
        }
 
+	if (!getsda(adap)) {
+		dev_err(&i2c_adap->dev, "SDA low, applying bus recovery\n");
+		/* I2C Bus Recovery */
+		i2c_adap->recover_bus(i2c_adap);
+	}
+
 	bit_dbg(3, &i2c_adap->dev, "emitting start condition\n");
 	i2c_start(adap);
 	for (i = 0; i < num; i++) {
@@ -684,8 +690,8 @@ static int __i2c_bit_add_bus(struct i2c_adapter *adap,
 	/* register new adapter to i2c module... */
 	adap->algo = &i2c_bit_algo;
 	adap->retries = 3;
-       adap->recover_bus = i2c_algo_bit_recovery;
-	
+	adap->recover_bus = i2c_algo_bit_recovery;
+
 	ret = add_adapter(adap);
 	if (ret < 0)
 		return ret;

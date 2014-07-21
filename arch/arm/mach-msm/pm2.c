@@ -641,6 +641,11 @@ static void msm_pm_timeout(void)
 #elif defined(CONFIG_MSM_PM_TIMEOUT_HALT)
 	printk(KERN_EMERG "%s(): halting\n", __func__);
 #endif
+	/* Sending modem reset signal */
+	*(uint32_t *)(virt_start_ptr + 0x170) = 0x1;
+	smsm_change_state(SMSM_APPS_STATE, 0, SMSM_RESET);
+	*(uint32_t *)(virt_start_ptr + 0x170) = 0x2;
+
 	for (;;)
 		;
 }
@@ -891,12 +896,16 @@ static int msm_pm_power_collapse
 	int val;
 	int modem_early_exit = 0;
 
+
+	/* clear C0 jump location */
+	*(uint32_t *)(virt_start_ptr + 0x40) = 0xBEEFDEAD;
+
 	*(uint32_t *)(virt_start_ptr + 0x30) = 0x1;
 
 	/* this location tell us we are doing a PC */
 	*(uint32_t *)(virt_start_ptr + 0x34) = 0x1;
 
-	/* this location tell us what PC we are doing
+        /* this location tell us what PC we are doing
 	 * i.e. idle/suspend
 	 * idlePC	--> 0x2
 	 * suspendPC	--> 0x1
@@ -1072,9 +1081,9 @@ static int msm_pm_power_collapse
 				/** ZTE_MODIFY by zhangxiaobo 10072240 The patch is from Qualcomm 
 				 * Symptom:  Sometimes system partition file is lost in the MSM8x25Q platform. The affected file 
 				 *           is same in all devices with identical build. Sometimes it is GC crash by accessing invalid address. 
-                                 * Root cause: In a quad core system, the Linux kernel will allocate 4 variables such as ¡°power_collapsed_cpu1, 
-                                 *            power_collapsed_cpu2, power_collapsed_cpu3, power_collapsed_cpu4¡± . These 4 variables have separate 
-                                 *            memory address.  At the same time, variable such as ¡°power_collapsed¡± is exist, but it¡¯s space will 
+                                 * Root cause: In a quad core system, the Linux kernel will allocate 4 variables such as \A1\B0power_collapsed_cpu1, 
+                                 *            power_collapsed_cpu2, power_collapsed_cpu3, power_collapsed_cpu4\A1\B1 . These 4 variables have separate 
+                                 *            memory address.  At the same time, variable such as \A1\B0power_collapsed\A1\B1 is exist, but it\A1\AFs space will 
                                  *            be free. Function can access power_collapsed but will damage memory content. In this way, 
 				 *            will trigger unknown stability issues.
 				 */
@@ -1381,12 +1390,28 @@ static int __ref msm_pm_power_collapse_standalone(bool from_idle)
 
 	switch (cpu) {
 	case 0:
-		/* clear the location first */
-		*(uint32_t *)(virt_start_ptr + 0x10) = 0x1;
+		/*
+		 * Clear the locations 0x50 & 0x54
+		 * Where we are logging the SPM0 CFG & CTL regs
+		 */
+		*(uint32_t *)(virt_start_ptr + 0x50) = 0x0;
+		*(uint32_t *)(virt_start_ptr + 0x54) = 0x0;
 
+		*(uint32_t *)(virt_start_ptr + 0x10) = 0x1;
 		*(uint32_t *)(virt_start_ptr + 0x20) = 0x1;
+
+		/* clear C0 jump location */
+		*(uint32_t *)(virt_start_ptr + 0x40) = 0xDEADBEEF;
+
 		break;
 	case 1:
+		/*
+		 * Clear the locations 0x60 & 0x64
+		 * Where we are logging the SPM0 CFG & CTL regs
+		 */
+		*(uint32_t *)(virt_start_ptr + 0x60) = 0x0;
+		*(uint32_t *)(virt_start_ptr + 0x64) = 0x0;
+
 		*(uint32_t *)(virt_start_ptr + 0x14) = 0x1;
 
 		/*
@@ -1399,8 +1424,18 @@ static int __ref msm_pm_power_collapse_standalone(bool from_idle)
 		else
 			/* clear this in platsmp-8625.c */
 			*(uint32_t *)(virt_start_ptr + 0x24) = 0x2;
+
+		/* clear C1 jump location */
+		*(uint32_t *)(virt_start_ptr + 0x44) = 0xDEADBEEF;
 		break;
 	case 2:
+		/*
+		 * Clear the locations 0x70 & 0x74
+		 * Where we are logging the SPM0 CFG & CTL regs
+		 */
+		*(uint32_t *)(virt_start_ptr + 0x70) = 0x0;
+		*(uint32_t *)(virt_start_ptr + 0x74) = 0x0;
+
 		*(uint32_t *)(virt_start_ptr + 0x18) = 0x1;
 
 		/*
@@ -1413,8 +1448,18 @@ static int __ref msm_pm_power_collapse_standalone(bool from_idle)
 		else
 			/* clear this in platsmp-8625.c */
 			*(uint32_t *)(virt_start_ptr + 0x28) = 0x2;
+
+		/* clear C2 location */
+		*(uint32_t *)(virt_start_ptr + 0x48) = 0xDEADBEEF;
 		break;
 	case 3:
+		/*
+		 * Clear the locations 0x80 & 0x84
+		 * Where we are logging the SPM0 CFG & CTL regs
+		 */
+		*(uint32_t *)(virt_start_ptr + 0x80) = 0x0;
+		*(uint32_t *)(virt_start_ptr + 0x84) = 0x0;
+
 		*(uint32_t *)(virt_start_ptr + 0x1C) = 0x1;
 
 		/*
@@ -1427,6 +1472,9 @@ static int __ref msm_pm_power_collapse_standalone(bool from_idle)
 		else
 			/* clear this in platsmp-8625.c */
 			*(uint32_t *)(virt_start_ptr + 0x2C) = 0x2;
+
+		/* clear C3 jump location */
+		*(uint32_t *)(virt_start_ptr + 0x4C) = 0xDEADBEEF;
 		break;
 	}
 
@@ -1968,9 +2016,15 @@ static int __init msm_pm_init(void)
 		__raw_writel(val, (MSM_CFG_CTL_BASE + 0x38));
 
 		l2x0_base_addr = MSM_L2CC_BASE;
+		spm0_base_addr = MSM_SAW0_BASE;
+		spm1_base_addr = MSM_SAW1_BASE;
+		spm2_base_addr = MSM_SAW2_BASE;
+		spm3_base_addr = MSM_SAW3_BASE;
+		apps_pwr_dwn   = APPS_PWRDOWN;
 	}
 
 	idle_v7_start_ptr = virt_start_ptr;
+	pm_write_smem_data = (void *)msm_pm_smem_data;
 
 #ifdef CONFIG_MSM_MEMORY_LOW_POWER_MODE
 	/* The wakeup_reason field is overloaded during initialization time
